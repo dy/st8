@@ -1,6 +1,5 @@
 var enot = require('enot');
 var _ = require('_');
-var extend = require('extend');
 
 module.exports = applyState;
 
@@ -37,7 +36,7 @@ function applyState(target, props){
 			for (var stateName in prop){
 				var innerProps = prop[stateName];
 				for (var innerPropName in innerProps){
-					if (innerPropName === 'before' || innerPropName === 'after') continue;
+					if (isStateTransitionName(innerPropName)) continue;
 					var innerProp = innerProps[innerPropName];
 					//save parent prop as a dependency for inner prop
 					(deps[innerPropName] = deps[innerPropName] || {})[propName] = true;
@@ -70,9 +69,8 @@ function createProps(target, props, deps){
 	for (var name in deps) {
 		var prop = props[name];
 
-		//set property states
-		if (_.isObject(prop)) statesCache.get(target)[name] = prop;
-		else statesCache.get(target)[name] = {};
+		//set initial property states as prototypes
+		statesCache.get(target)[name] = Object.create(_.isObject(prop) ? prop : null);
 
 		//save initial values
 		valuesCache.get(target)[name] = target[name];
@@ -110,20 +108,31 @@ function createProps(target, props, deps){
 					var setResult = callState(target, propState.set, value, oldValue);
 					value = setResult;
 
-					//FIXME
-					// if (value === oldValue) return;
+					//Ignore not changed value
+					if (value === oldValue && oldValue !== undefined) return;
 
 					//leaving an old state unbinds all events of the old state
-					unbindEvents(target, _.has(propState, oldValue) ? propState[oldValue] : propState._ );
+					var oldState = _.has(propState, oldValue) ? propState[oldValue] : propState._;
+					unbindEvents(target, oldState);
+
+					//try to enter new state (if redirect happens)
+					leaveState(target, newState, value, oldValue);
+
 
 					//new state applies new props: binds events, sets values
-					applyProps(target, _.has(propState, value) ? propState[value] : propState._ );
+					var newState = _.has(propState, value) ? propState[value] : propState._;
+					applyProps(target, newState);
+
+					//try to enter new state (if redirect happens)
+					callState(target, newState, value, oldValue);
+
 
 					//save new self value
 					targetValues[name] = value;
 
 					//4. call changed
-					callState(target, propState.changed, value, oldValue)
+					if (value !== oldValue)
+						callState(target, propState.changed, value, oldValue)
 
 					// console.groupEnd()
 				}
@@ -160,16 +169,19 @@ function initProp(target, name){
 
 //take over properties by target
 function applyProps(target, props){
-	// console.log('apply props', props)
 	if (!props) return;
 
 	for (var name in props){
+		if (isStateTransitionName(name)) continue;
+
 		var value = props[name];
 		var state = statesCache.get(target)[name];
 
 		//extendify descriptor value
 		if (_.isObject(value)){
-			extend(state, value);
+			for (var propName in value){
+				state[propName] = value[propName]
+			}
 		}
 
 		else {
@@ -182,12 +194,32 @@ function applyProps(target, props){
 	}
 }
 
+//unbind state declared props
 function unbindEvents(target, props){
 	if (!props) return;
 
 	for (var name in props){
-		//bind fn value as a method
-		enot.off(name, props[name]);
+		if (isStateTransitionName[name]) continue;
+
+		var value = props[name];
+		var state = statesCache.get(target)[name];
+
+		//delete extended descriptor
+		if (_.isObject(value)){
+			for (var propName in value){
+				delete state[propName]
+			}
+		}
+
+		else {
+			//unbind fn value as a method
+			if (_.isFn(value)){
+				enot.off(name, value);
+			}
+
+			//set value to root initial one
+			target[name] = value;
+		}
 	}
 }
 
@@ -225,14 +257,18 @@ function callState(target, state, a1, a2) {
 }
 
 
-//try to leave state
-function leave(target, state, a){
-	if (!state) return state;
+//try to leave state: call after with new state name passed
+function leaveState(target, state, a){
+	if (!state) return a;
 
 	if (!state[leaveCallbackName]) return state[leaveCallbackName];
 
-	if (isFn(state[leaveCallbackName])) return state[leaveCallbackName].call(target, a)
+	if (_.isFn(state[leaveCallbackName])) return state[leaveCallbackName].call(target, a)
 }
 
 
 function noop(){};
+
+function isStateTransitionName(name){
+	if (name === enterCallbackName || name === leaveCallbackName) return true;
+}

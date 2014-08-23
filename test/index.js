@@ -138,7 +138,7 @@ describe("State cases", function(){
 
 
 	it("append descriptors in states, unapply changes on leaving state", function(){
-		var A = Mod({
+		var a = applyState({}, {
 			a: {
 				get: function(){
 					return 1
@@ -154,9 +154,7 @@ describe("State cases", function(){
 					}
 				}
 			}
-		})
-
-		var a = new A;
+		});
 
 		assert.equal(a.a, 1);
 
