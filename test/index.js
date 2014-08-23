@@ -72,8 +72,8 @@ describe("State cases", function(){
 	it("any state name is possible", function(){
 		var log = [];
 
-		var A = Mod({
-			state: {
+		var target = applyState({}, {
+			a: {
 				init: {
 					before: function(){
 						log.push('bi')
@@ -131,12 +131,8 @@ describe("State cases", function(){
 			}
 		});
 
-		var a = new A;
-
-		//TODO: resolve proper `init`'s work: whether `init` is always first, or `parsedValue`/`_` is first.
-
 		assert.deepEqual(log, ['bi', 'bs', 'b_'])
-		assert.equal(a.a, undefined)
+		assert.equal(target.a, undefined)
 	});
 
 

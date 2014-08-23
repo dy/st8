@@ -15,7 +15,7 @@ var valuesCache = new WeakMap;
 //as far properties can change it’s behaviour dynamically, we have to keep real states somewhere
 var statesCache = new WeakMap;
 
-//list of dependencies for right init order
+//list of dependencies for the right init order
 var depsCache = new WeakMap;
 
 
@@ -110,15 +110,14 @@ function createProps(target, props, deps){
 					var setResult = callState(target, propState.set, value, oldValue);
 					value = setResult;
 
+					//FIXME
+					// if (value === oldValue) return;
+
 					//leaving an old state unbinds all events of the old state
-					var oldProps = propState[oldValue];
-					if (oldProps === undefined) oldProps = propState._;
-					unbindEvents(target, oldProps)
+					unbindEvents(target, _.has(propState, oldValue) ? propState[oldValue] : propState._ );
 
 					//new state applies new props: binds events, sets values
-					var newProps = propState[value];
-					if (newProps === undefined) newProps = propState._;
-					applyProps(target, newProps);
+					applyProps(target, _.has(propState, value) ? propState[value] : propState._ );
 
 					//save new self value
 					targetValues[name] = value;
@@ -137,6 +136,7 @@ function createProps(target, props, deps){
 function initProp(target, name){
 	var deps = depsCache.get(target);
 	if(!deps[name]) return;
+
 	// console.log('init', name, 'dependent on', deps[name]);
 
 	var propState = statesCache.get(target)[name];
