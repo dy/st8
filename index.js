@@ -35,6 +35,9 @@ function applyState(target, props){
 		if (_.isObject(prop)) {
 			for (var stateName in prop){
 				var innerProps = prop[stateName];
+				//pass non-object inner props
+				if (!_.isObject(innerProps)) continue;
+
 				for (var innerPropName in innerProps){
 					if (isStateTransitionName(innerPropName)) continue;
 					var innerProp = innerProps[innerPropName];
@@ -95,7 +98,7 @@ function createProps(target, props, deps){
 			})(name, target),
 			set: (function(name, target){
 				return function(value){
-					// console.log('set ', name)
+					// console.log('set', name, value)
 					var propState = statesCache.get(target)[name];
 					var targetValues = valuesCache.get(target);
 
@@ -119,20 +122,40 @@ function createProps(target, props, deps){
 						unapplyProps(target, oldState);
 
 						//try to enter new state (if redirect happens)
-						leaveState(target, oldState, value, oldValue);
+						var leaveResult = leaveState(target, oldState, value, oldValue);
+
+						// console.log('leaveRes', leaveResult)
 					}
 
 					//save new self value
 					targetValues[name] = value;
 
+					var newStateName = _.has(propState, value) ? value : '_'
 
-					//new state applies new props: binds events, sets values
-					var newState = _.has(propState, value) ? propState[value] : propState._;
-					applyProps(target, newState);
+					if (!lock(target, newStateName)) {
+						//new state applies new props: binds events, sets values
+						var newState = propState[newStateName];
+						applyProps(target, newState);
 
-					//try to enter new state (if redirect happens)
-					callState(target, newState, value, oldValue);
+						//try to enter new state (if redirect happens)
+						var enterResult = callState(target, newState, value, oldValue);
 
+						//redirect mod, if returned any but self
+						if (enterResult !== undefined && enterResult !== value) {
+							//ignore entering falsy state
+							if (enterResult === false) {
+								target[name] = oldValue;
+							}
+							//enter new result
+							else {
+								target[name] = enterResult;
+							}
+
+							return unlock(target, newStateName);
+						}
+
+						unlock(target, newStateName);
+					}
 
 
 					//4. call changed
@@ -231,8 +254,8 @@ function unapplyProps(target, props){
 
 //try to enter a state property, like set/get/init/etc
 function callState(target, state, a1, a2) {
-	//undefined/false state (like no init meth)
-	if (!state) {
+	//undefined state (like no init meth)
+	if (state === undefined) {
 		return a1;
 	}
 
@@ -277,4 +300,17 @@ function noop(){};
 
 function isStateTransitionName(name){
 	if (name === enterCallbackName || name === leaveCallbackName) return true;
+}
+
+//lock helpers
+var lockCache = new WeakMap;
+function lock(target, name){
+	if (!lockCache.get(target)) lockCache.set(target, {});
+	if (lockCache.get(target)[name]) return true;
+	lockCache.get(target)[name] = true;
+	return false;
+}
+
+function unlock(target, name){
+	lockCache.get(target)[name] = null
 }

@@ -15,6 +15,7 @@ describe("State cases", function(){
 				_: {
 					a: {
 						set: function(v){
+							// console.log('set called')
 							assert.equal(v,1)
 							return 2;
 						}
@@ -192,9 +193,11 @@ describe("State cases", function(){
 				},
 				3: {
 					before: function(){
+						// console.log('before 3')
 						state = this.a
 					},
 					after: function(){
+						// console.log('after 3')
 						outState = this.a
 					}
 				},
@@ -250,6 +253,7 @@ describe("State cases", function(){
 		assert.equal(outState, 2)
 		delete a.a
 		assert.equal(a.a, 3)
+		// console.log('--------a.a = undefined')
 		a.a = undefined;
 		assert.equal(state, undefined)
 		assert.equal(outState, 3)
@@ -257,65 +261,21 @@ describe("State cases", function(){
 
 
 
-	it("stateful events should be consistent && exclusive (they are noop in other states)", function(){
-		var i = 0;
-		var j = 0;
-		var A = Mod({
-			x: {
-				init: 1,
-				1: {
-					'click': function(){j++}
-				},
-				2: {
-
-				},
-				3: {
-					'.z click': 'inc'
-				}
-			},
-
-			inc: function(){
-				i++
+	it("undefined states & redirections", function(){
+		var a = applyState({}, {
+			a: {
+				init: 'x',
+				undefined: null,
+				x: null,
+				null: 'y',
+				y: 1,
+				1: 2,
+				2: 8,
+				_: false
 			}
-		});
+		})
 
-		var a = new A;
-		var z = document.createElement('div');
-		z.className = 'z';
-		document.body.appendChild(z);
-
-		dispatchEvt(z, 'click')
-		dispatchEvt(a, 'click')
-		assert.equal(i, 0)
-		assert.equal(j, 1)
-
-		a.x = 2;
-
-		dispatchEvt(z, 'click')
-		dispatchEvt(a, 'click')
-		assert.equal(i, 0)
-		assert.equal(j, 1)
-
-		a.x = 3;
-
-		dispatchEvt(z, 'click')
-		dispatchEvt(a, 'click')
-		assert.equal(i, 1)
-		assert.equal(j, 1)
-
-		// console.log('------- x=2')
-		a.x = 2;
-		dispatchEvt(z, 'click')
-		dispatchEvt(a, 'click')
-		assert.equal(i, 1)
-		assert.equal(j, 1)
-
-		a.x = 1;
-
-		dispatchEvt(z, 'click')
-		dispatchEvt(a, 'click')
-		assert.equal(i, 1)
-		assert.equal(j, 2)
+		assert.equal(a.a, 2);
 	});
 
 })
