@@ -2,7 +2,7 @@ var enot = require('enot');
 var _ = require('_');
 var extend = require('extend');
 
-module.exports = State;
+module.exports = applyState;
 
 
 
@@ -15,149 +15,185 @@ var valuesCache = new WeakMap;
 //as far properties can change it’s behaviour dynamically, we have to keep real states somewhere
 var statesCache = new WeakMap;
 
+//list of dependencies for right init order
+var depsCache = new WeakMap;
 
-//calling constructor applies props on target
-//NOTE: don’t use options here: it’s not the state responsibility
-function State (target, props) {
-	this.target = target;
-	this.props = props;
 
+//apply state to a target
+function applyState(target, props){
 	//create target private storage
-	if (!valuesCache.has(this.target)) valuesCache.set(this.target, {});
-	this.values = valuesCache.get(target)
-	if (!statesCache.has(this.target)) statesCache.set(this.target, {});
-	this.states = statesCache.get(target)
+	if (!valuesCache.has(target)) valuesCache.set(target, {});
+	if (!statesCache.has(target)) statesCache.set(target, {});
 
-	//create accessors at first (incl inner props)
-	this.createProps();
+	//calc dependencies, e.g. b depends on a = {b: {a: true}, a: {}}
+	var deps = {};
+	depsCache.set(target, deps);
 
-	//set properties values
-	this.initProps();
+	for (var propName in props){
+		deps[propName] = deps[propName] || {};
+
+		var prop = props[propName];
+		if (_.isObject(prop)) {
+			for (var stateName in prop){
+				var innerProps = prop[stateName];
+				for (var innerPropName in innerProps){
+					if (innerPropName === 'before' || innerPropName === 'after') continue;
+					var innerProp = innerProps[innerPropName];
+					//save parent prop as a dependency for inner prop
+					(deps[innerPropName] = deps[innerPropName] || {})[propName] = true;
+
+					//stub property on target with proper type
+					if (!(innerPropName in target)) {
+						if (_.isFn(innerProp)) target[innerPropName] = noop;
+					}
+				}
+			}
+		}
+	}
+
+	//create accessors
+	createProps(target, props, deps);
+
+
+	//init values
+	for (var propName in deps){
+		initProp(target, propName);
+	}
 
 	return target;
 }
 
 
-var proto = State.prototype;
-
-
 //create accessor on target for every stateful property
 //TODO: getect init fact via existing value in storage (throw away storage objects)
-proto.createProps = function (){
-	for (var name in this.props) {
-		var prop = this.props[name];
+function createProps(target, props, deps){
+	for (var name in deps) {
+		var prop = props[name];
 
-		//set accessors only on stateful properties
-		if (_.isObject(prop)) {
-			this.states[name] = prop;
+		//set property states
+		if (_.isObject(prop)) statesCache.get(target)[name] = prop;
+		else statesCache.get(target)[name] = {};
 
-			//set target stub
-			Object.defineProperty(this.target, name, {
-				get: (function(name, self){
-					return function(){
-						var propState = self.states[name];
+		//save initial values
+		valuesCache.get(target)[name] = target[name];
 
-						//init, if is not
-						if (!name in self.values) {
-							self.values[name] = self.callState(propState.init, self.target[name]);
-						}
+		//set accessors for all props, not the object ones only: some plain property may be dependent on other property’s state, so it has to be intercepted in getter and the stateful property inited beforehead
+		Object.defineProperty(target, name, {
+			get: (function(name, target){
+				return function(){
+					// console.group('get ', name)
+					var propState = statesCache.get(target)[name];
+					var targetValues = valuesCache.get(target);
 
-						//getting prop value just returns it’s real value
-						var getValue = self.callState(propState.get, self.values[name]);
+					//init, if is not
+					initProp(target, name);
 
-						return getValue;
-					}
-				})(name, this),
-				set: (function(name, self){
-					return function(value){
-						var propState = self.states[name];
+					//getting prop value just returns it’s real value
+					var getValue = callState(target, propState.get, targetValues[name]);
 
-						//init, if is not
-						if (!_.has(self.values, name)) {
-							self.values[name] = self.callState(propState.init, self.target[name]);
-						}
+					// console.groupEnd();
+					return getValue;
+				}
+			})(name, target),
+			set: (function(name, target){
+				return function(value){
+					// console.log('set ', name)
+					var propState = statesCache.get(target)[name];
+					var targetValues = valuesCache.get(target);
 
-						var oldValue = self.values[name];
+					//init, if is not
+					initProp(target, name);
 
-						//1. apply setter to value
-						var setResult = self.callState(propState.set, value, oldValue);
-						value = setResult;
+					var oldValue = targetValues[name];
 
-						//leaving an old state unbinds all events of the old state
-						var oldProps = propState[oldValue];
-						if (oldProps === undefined) oldProps = propState._;
-						self.unbindEvents(oldProps)
+					//1. apply setter to value
+					var setResult = callState(target, propState.set, value, oldValue);
+					value = setResult;
 
-						//new state applies new props: binds events, sets values
-						var newProps = propState[value];
-						if (newProps === undefined) newProps = propState._;
-						self.applyProps(newProps);
+					//leaving an old state unbinds all events of the old state
+					var oldProps = propState[oldValue];
+					if (oldProps === undefined) oldProps = propState._;
+					unbindEvents(target, oldProps)
 
-						//save new self value
-						self.values[name] = value;
+					//new state applies new props: binds events, sets values
+					var newProps = propState[value];
+					if (newProps === undefined) newProps = propState._;
+					applyProps(target, newProps);
 
-						//4. call changed
-						self.callState(propState.changed, value, oldValue)
-					}
-				})(name, this)
-			});
-		}
+					//save new self value
+					targetValues[name] = value;
 
-		//set plain property
-		else {
-			target[name] = props[name];
-		}
+					//4. call changed
+					callState(target, propState.changed, value, oldValue)
+
+					// console.groupEnd()
+				}
+			})(name, target)
+		});
 	};
 }
 
+//property initializer
+function initProp(target, name){
+	var deps = depsCache.get(target);
+	if(!deps[name]) return;
+	// console.log('init', name, 'dependent on', deps[name]);
 
-//set properties on target
-proto.initProps = function (target, props){
-	this.eachProp(function(name, prop){
-		//init descriptor property
-		this.target[name] = this.callState(prop.init, this.target[name]);
-	});
+	var propState = statesCache.get(target)[name];
+	var targetValues = valuesCache.get(target);
+
+	//init dependens things beforehead
+	for (var depPropName in deps[name]){
+		if (deps[name][depPropName]) {
+			// console.log('redirect init to', depPropName)
+			initProp(target, depPropName);
+		}
+	}
+
+	//mark dependency as resolved (ignore next init calls)
+	deps[name] = null;
+
+	//call init with target initial value stored in targetValues
+	target[name] = callState(target, propState.init, targetValues[name]);
 }
-
-
 
 
 //take over properties by target
-proto.applyProps = function(props){
+function applyProps(target, props){
+	// console.log('apply props', props)
 	if (!props) return;
 
-	eachProp.call(this, props, function(name, value){
+	for (var name in props){
+		var value = props[name];
+		var state = statesCache.get(target)[name];
+
 		//extendify descriptor value
 		if (_.isObject(value)){
-			extend(this.states[name], value);
+			extend(state, value);
 		}
 
-		//bind fn value as a method
-		else if (_.isFn(value)){
-			enot.on(name, value);
-		}
-
-		//redefine plain value
 		else {
-			this.target[name] = value;
+			//bind fn value as a method
+			if (_.isFn(value)){
+				enot.on(name, value);
+			}
+			target[name] = value;
 		}
-	})
+	}
 }
 
-proto.unbindEvents = function(props){
+function unbindEvents(target, props){
 	if (!props) return;
 
-	eachProp.call(this, props, function(name, value){
+	for (var name in props){
 		//bind fn value as a method
-		enot.off(name, value);
-	})
+		enot.off(name, props[name]);
+	}
 }
 
 
 //try to enter a state property, like set/get/init/etc
-proto.callState = function(state, a1, a2) {
-	var self = this;
-
+function callState(target, state, a1, a2) {
 	//undefined/false state (like no init meth)
 	if (!state) {
 		return a1;
@@ -170,13 +206,13 @@ proto.callState = function(state, a1, a2) {
 
 	//init: function(){}
 	else if (_.isFn(state)) {
-		return state.call(this.target, a1, a2);
+		return state.call(target, a1, a2);
 	}
 
 	else if (_.isObject(state)) {
 		//init: {before: function(){}}
 		if (_.isFn(state[enterCallbackName])) {
-			return state[enterCallbackName].call(this.target, a1, a2);
+			return state[enterCallbackName].call(target, a1, a2);
 		}
 		//init: {before: 123}
 		else {
@@ -199,56 +235,4 @@ function leave(target, state, a){
 }
 
 
-
-
-
-//iterate props in proper order
-proto.eachProp = function(fn){
-	var props = this.props;
-
-	eachProp.call(this, props, fn)
-}
-
-
-function eachProp(props, fn){
-	var self = this;
-
-	//calc dependents - properties which can be affected by the state of this property
-	//e.g. {a: {'b':true,'c':true,'d':true}} - b,c,d should go after a
-	var dependents = {};
-	for (var propName in props) {
-		var prop = props[propName];
-
-		if (_.isObject(prop)){
-			dependents[propName] = getDependents(prop);
-		}
-	}
-
-	//iterate over props
-	Object.keys(props)
-	//form the right order for iteration
-	.sort(function(a, b){
-		//a contains b as a dependent - make b go after a;
-		if (dependents[a][b]) return -1;
-		if (dependents[b][a]) return 1;
-
-
-	})
-	.forEach(function(name){
-		fn.call(self, name, props[name]);
-	});
-}
-
-
-//collect set of inner dependencies, e.g. {1: {a:1}, 2: {b:2}, _: {c:3}} → ['a', 'b', 'c']
-function getDependents(prop){
-	var res = {};
-
-	for (var stateName in prop){
-		for (var propName in prop[stateName]){
-			res[propName] = true;
-		}
-	}
-
-	return res;
-}
+function noop(){};
