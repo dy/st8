@@ -108,15 +108,22 @@ function createProps(target, props, deps){
 					var setResult = callState(target, propState.set, value, oldValue);
 					value = setResult;
 
-					//Ignore not changed value
-					if (value === oldValue && oldValue !== undefined) return;
+					//FIXME: catch initial call better way
+					//ignore leaving absent initial state
+					if (oldValue !== undefined) {
+						//Ignore not changed value
+						if (value === oldValue) return;
 
-					//leaving an old state unbinds all events of the old state
-					var oldState = _.has(propState, oldValue) ? propState[oldValue] : propState._;
-					unbindEvents(target, oldState);
+						//leaving an old state unbinds all events of the old state
+						var oldState = _.has(propState, oldValue) ? propState[oldValue] : propState._;
+						unapplyProps(target, oldState);
 
-					//try to enter new state (if redirect happens)
-					leaveState(target, newState, value, oldValue);
+						//try to enter new state (if redirect happens)
+						leaveState(target, oldState, value, oldValue);
+					}
+
+					//save new self value
+					targetValues[name] = value;
 
 
 					//new state applies new props: binds events, sets values
@@ -127,8 +134,6 @@ function createProps(target, props, deps){
 					callState(target, newState, value, oldValue);
 
 
-					//save new self value
-					targetValues[name] = value;
 
 					//4. call changed
 					if (value !== oldValue)
@@ -195,7 +200,7 @@ function applyProps(target, props){
 }
 
 //unbind state declared props
-function unbindEvents(target, props){
+function unapplyProps(target, props){
 	if (!props) return;
 
 	for (var name in props){
@@ -259,6 +264,7 @@ function callState(target, state, a1, a2) {
 
 //try to leave state: call after with new state name passed
 function leaveState(target, state, a){
+	// console.log('leave', state)
 	if (!state) return a;
 
 	if (!state[leaveCallbackName]) return state[leaveCallbackName];

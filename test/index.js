@@ -165,4 +165,157 @@ describe("State cases", function(){
 		assert.equal(a.a, 1);
 	});
 
+
+
+	it("perform state transitions", function(){
+		var state, outState;
+
+		var a = applyState({}, {
+			a: {
+				1: {
+					before: function(){
+						// console.log("before 1")
+						state = this.a
+					},
+					after: function(){
+						// console.log("after 1")
+						outState = this.a
+					}
+				},
+				2: {
+					before: function(){
+						state = this.a
+					},
+					after: function(){
+						outState = this.a
+					}
+				},
+				3: {
+					before: function(){
+						state = this.a
+					},
+					after: function(){
+						outState = this.a
+					}
+				},
+				//this shouldn’t be entered unless string 'undefined' passed
+				undefined: {
+					before: function(){
+						// console.log("beforeundefined", this.a)
+						state = this.a
+					},
+					after: function(){
+						// console.log("afterundefined", this.a)
+						outState = this.a
+					}
+				},
+				'null': {
+					before: function(){
+						// console.log("beforenullstate", this.a)
+						state = this.a
+					},
+					after: function(){
+						// console.log("afternullstate", this.a)
+						outState = this.a
+					}
+				},
+				//this should be a case for `undefined` state
+				_: {
+					before: function(){
+						// console.log("before remainder")
+					},
+
+					after: function(){
+						// console.log("after remainder")
+					}
+				}
+			}
+		})
+
+		// console.log(A.properties)
+		assert.strictEqual(state, undefined)
+		assert.strictEqual(outState, undefined)
+		a.a = null;
+		assert.strictEqual(state, null)
+		assert.strictEqual(outState, undefined)
+		// console.log('-----a.a = 1')
+		a.a = 1;
+		assert.strictEqual(state, 1)
+		assert.strictEqual(outState, null)
+		a.a = 2;
+		assert.strictEqual(state, 2)
+		assert.strictEqual(outState, 1)
+		a.a = 3;
+		assert.equal(state, 3)
+		assert.equal(outState, 2)
+		delete a.a
+		assert.equal(a.a, 3)
+		a.a = undefined;
+		assert.equal(state, undefined)
+		assert.equal(outState, 3)
+	});
+
+
+
+	it("stateful events should be consistent && exclusive (they are noop in other states)", function(){
+		var i = 0;
+		var j = 0;
+		var A = Mod({
+			x: {
+				init: 1,
+				1: {
+					'click': function(){j++}
+				},
+				2: {
+
+				},
+				3: {
+					'.z click': 'inc'
+				}
+			},
+
+			inc: function(){
+				i++
+			}
+		});
+
+		var a = new A;
+		var z = document.createElement('div');
+		z.className = 'z';
+		document.body.appendChild(z);
+
+		dispatchEvt(z, 'click')
+		dispatchEvt(a, 'click')
+		assert.equal(i, 0)
+		assert.equal(j, 1)
+
+		a.x = 2;
+
+		dispatchEvt(z, 'click')
+		dispatchEvt(a, 'click')
+		assert.equal(i, 0)
+		assert.equal(j, 1)
+
+		a.x = 3;
+
+		dispatchEvt(z, 'click')
+		dispatchEvt(a, 'click')
+		assert.equal(i, 1)
+		assert.equal(j, 1)
+
+		// console.log('------- x=2')
+		a.x = 2;
+		dispatchEvt(z, 'click')
+		dispatchEvt(a, 'click')
+		assert.equal(i, 1)
+		assert.equal(j, 1)
+
+		a.x = 1;
+
+		dispatchEvt(z, 'click')
+		dispatchEvt(a, 'click')
+		assert.equal(i, 1)
+		assert.equal(j, 2)
+	});
+
 })
