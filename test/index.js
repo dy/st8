@@ -278,4 +278,46 @@ describe("State cases", function(){
 		assert.equal(a.a, 2);
 	});
 
+
+
+	it("init remainder state", function(){
+		var i = 0, o = 0;
+
+		var a = applyState({},{
+			a: {
+				_: {
+					before: function(){
+						// console.log("before _")
+						i++
+					},
+					after: function(){
+						// console.log("after _")
+						o++
+					}
+				},
+				1: {
+					before: function(){
+						i++
+					},
+					after: function(){
+						o++
+					}
+				}
+
+			}
+		})
+
+		assert.equal(i, 1 );
+		assert.equal(o, 0 );
+		// console.log("---------a.a = 1")
+		a.a = 1;
+		assert.equal(i, 2 );
+		assert.equal(o, 1 );
+		// console.log("---------a.a = undefined")
+		a.a = undefined;
+		assert.equal(i, 3 );
+		assert.equal(o, 2 );
+
+	})
+
 })

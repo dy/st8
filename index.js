@@ -7,6 +7,10 @@ module.exports = applyState;
 
 var enterCallbackName = 'before';
 var leaveCallbackName = 'after';
+var initCallbackName = 'init';
+var changedCallbackName = 'changed';
+var setterName = 'set';
+var getterName = 'get';
 
 //values keyed by target
 var valuesCache = new WeakMap;
@@ -78,6 +82,9 @@ function createProps(target, props, deps){
 		//save initial values
 		valuesCache.get(target)[name] = target[name];
 
+		//set initialization lock in order to detect first set call
+		lock(target, initCallbackName + name);
+
 		//set accessors for all props, not the object ones only: some plain property may be dependent on other property’s state, so it has to be intercepted in getter and the stateful property inited beforehead
 		Object.defineProperty(target, name, {
 			get: (function(name, target){
@@ -90,7 +97,7 @@ function createProps(target, props, deps){
 					initProp(target, name);
 
 					//getting prop value just returns it’s real value
-					var getValue = callState(target, propState.get, targetValues[name]);
+					var getValue = callState(target, propState[getterName], targetValues[name]);
 
 					// console.groupEnd();
 					return getValue;
@@ -108,12 +115,12 @@ function createProps(target, props, deps){
 					var oldValue = targetValues[name];
 
 					//1. apply setter to value
-					var setResult = callState(target, propState.set, value, oldValue);
+					var setResult = callState(target, propState[setterName], value, oldValue);
 					value = setResult;
 
 					//FIXME: catch initial call better way
 					//ignore leaving absent initial state
-					if (oldValue !== undefined) {
+					if (!unlock(target, initCallbackName + name)) {
 						//Ignore not changed value
 						if (value === oldValue) return;
 
@@ -123,8 +130,6 @@ function createProps(target, props, deps){
 
 						//try to enter new state (if redirect happens)
 						var leaveResult = leaveState(target, oldState, value, oldValue);
-
-						// console.log('leaveRes', leaveResult)
 					}
 
 					//save new self value
@@ -160,7 +165,7 @@ function createProps(target, props, deps){
 
 					//4. call changed
 					if (value !== oldValue)
-						callState(target, propState.changed, value, oldValue)
+						callState(target, propState[changedCallbackName], value, oldValue)
 
 					// console.groupEnd()
 				}
@@ -191,7 +196,7 @@ function initProp(target, name){
 	deps[name] = null;
 
 	//call init with target initial value stored in targetValues
-	target[name] = callState(target, propState.init, targetValues[name]);
+	target[name] = callState(target, propState[initCallbackName], targetValues[name]);
 }
 
 
@@ -312,5 +317,8 @@ function lock(target, name){
 }
 
 function unlock(target, name){
-	lockCache.get(target)[name] = null
+	var res = false;
+	if (lockCache.get(target)[name]) res = true;
+	lockCache.get(target)[name] = null;
+	return res;
 }
