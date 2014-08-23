@@ -3,14 +3,13 @@ npm install st8
 ```
 
 ```js
-var State = require('st8');
+var state = require('st8');
 
 //target can be any object
 var target = {};
 
-//temporary constructor is that.
-//think about var s = new State(propList); st8.applyTo(target); - it will unbind state controller from the target instance.
-var state = new State(target, {
+//apply properties controller to the target
+state(target, {
 	a: {
 		init: function(){
 			return 1
