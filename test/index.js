@@ -470,7 +470,7 @@ describe("State cases", function(){
 		})
 
 		assert.equal(a.a, 3)
-		// console.log("---")
+		// console.log("---- a.a = 2")
 		a.a = 2
 		// console.log(a.a)
 		assert.equal(a.a, 5)

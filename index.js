@@ -109,7 +109,7 @@ function createProps(target, props, deps){
 			})(name, target),
 			set: (function(name, target){
 				return function(value){
-					// console.log('set', name, value)
+					console.log('set', name, value)
 					var propState = statesCache.get(target)[name];
 					var targetValues = valuesCache.get(target);
 
@@ -131,10 +131,20 @@ function createProps(target, props, deps){
 						//leaving an old state unbinds all events of the old state
 						var oldState = _.has(propState, oldValue) ? propState[oldValue] : propState._;
 
-						//try to enter new state (if redirect happens)
-						var leaveResult = leaveState(target, oldState, value, oldValue);
+						if (!lock(target, leaveCallbackName + oldState)) {
+							//try to enter new state (if redirect happens)
+							var leaveResult = leaveState(target, oldState, value, oldValue);
 
-						unapplyProps(target, oldState);
+							unlock(target, leaveCallbackName + oldState);
+
+							//ignore redirect
+							if (targetValues[name] !== oldValue) {
+								return;
+							}
+
+							unapplyProps(target, oldState);
+						}
+
 					}
 
 					//save new self value
