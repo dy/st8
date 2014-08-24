@@ -622,7 +622,6 @@ describe("State cases", function(){
 
 
 	it("keep states callbacks context", function(){
-		var a = document.createElement("div")
 		var i = 0
 		var a = applyState({}, {
 			a: {
@@ -785,22 +784,22 @@ describe("State cases", function(){
 		// A.meth();
 		enot.fire(a, "meth")
 		enot.fire(a, "cb")
-		assert.sameMembers(log, ["2", "2cb"])
+		assert.sameMembers(log, ["default", "ex", "2", "2cb"])
 		enot.fire(a, "cbAlias")
-		assert.sameMembers(log, ["2", "2cb"])
+		assert.sameMembers(log, ["default", "ex", "2", "2cb"])
 		enot.fire(a, "cbAlias2")
-		assert.sameMembers(log, ["2", "2cb", "2cb"])
+		assert.sameMembers(log, ["default", "ex", "2", "2cb", "2cb"])
 
 		log = [];
 		// console.log("------a=1")
 		a.a = 1;
-		A.fn.meth();
+		a.meth();
 		enot.fire(a, "cb")
-		assert.sameMembers(log, ["default", "default cb"])
+		assert.sameMembers(log, ["default", "ex"])
 		enot.fire(a, "cbAlias")
-		assert.sameMembers(log, ["default", "default cb", "default cb"])
+		assert.sameMembers(log, ["default", "ex", "ex"])
 		enot.fire(a, "cbAlias2")
-		assert.sameMembers(log, ["default", "default cb", "default cb", "default cb"])
+		assert.sameMembers(log, ["default", "ex", "ex", "ex"])
 	})
 
 	it("redefine variables in states", function(){
@@ -881,5 +880,308 @@ describe("State cases", function(){
 		a.v = 1;
 		assert.equal(a.a, 1)
 	})
+
+
+
+
+	it("handle listed state values", function(){
+		var a = applyState({}, {
+			a: {
+				init:1,
+
+				'1,2': {
+					x: 1
+				}
+			}
+		})
+
+		assert.equal(a.x, 1)
+	})
+
+	it("handle redirect shortcuts", function(){
+		var a = applyState({}, {
+			a: {
+				init: 1,
+
+				1: 2,
+				2: function(){
+					return 3;
+				},
+				3: {
+
+				},
+				_: false
+
+			}
+		})
+
+		// console.log(A.properties)
+
+
+		assert.equal(a.a, 3);
+
+		// console.log("---- a.a = 4")
+		a.a = 4;
+
+		assert.equal(a.a, 3);
+	})
+
+	it("properly throw to default values in undefined states", function(){
+		var log = [];
+		var a = applyState({}, {
+			v: {
+				init: 1,
+
+				1: {
+					a: 1
+				},
+
+				2: {
+					x: 1,
+					a: 2
+				},
+
+				3: {
+					a: 3
+				}
+			},
+
+			x:2
+		})
+
+		// console.dir(A)
+
+		assert.equal(a.x, 2)
+		// console.log("----v = 2")
+		a.v = 2;
+		assert.equal(a.x, 1)
+
+		// console.log("----v = 3")
+		a.v = 3;
+		assert.equal(a.x, 2)
+
+		// console.log("----v = 4")
+		a.v = 4;
+		assert.equal(a.x, 2)
+		assert.equal(a.a, undefined)
+	})
+
+
+	it("handle weird state cases", function(){
+		var a = applyState({}, {
+			a: {
+				'false': false,
+				x: false,
+				y: 'y',
+				z: '_',
+				i: {
+					a: false
+				},
+				_: 'y'
+			}
+		})
+
+
+		assert.equal(a.a, 'y');
+	})
+
+
+	it("init gets on well with states", function(){
+		var log = [];
+		var a = applyState({a: 0}, {
+			a: {
+				init: function(value){
+					log.push("init");
+					// console.log("init cb", value)
+					assert.equal(value, 0);
+					return 1;
+				},
+
+				0: {
+					before: function(){
+						log.push("before0")
+						// assert.equal(a.a, xxx)
+					}
+				},
+				1: {
+					before: function(){
+						log.push("before1")
+					}
+				},
+				2: {
+					before: function(){
+						log.push("before2")
+					}
+				}
+
+			}
+		})
+
+		assert.deepEqual(log, ["init", "before1"]);
+		assert.equal(a.a, 1);
+	})
+
+
+	it("all state-dependent properties has to present on element in undefined state", function(){
+		var a = applyState({}, {
+			a: {
+				1: {
+					x:1,
+					'@x some': function(){
+						return 123;
+					}
+				}
+			}
+		});
+
+
+		assert.ok("x" in a);
+		assert.property(a, "@x some");
+	})
+
+
+	it("modify descriptors in runtime", function(){
+		var log = [];
+
+		var a = applyState({}, {
+			a: {
+				1: {
+					b: {
+						set: function(val){
+							return val * 3
+						},
+						changed: function(){
+							log.push("changed")
+						}
+					}
+				}
+			},
+
+			b: {
+				init: 1,
+				set: function(val){
+					// console.log('set b', val)
+					return val * 2
+				}
+			}
+		})
+
+
+		assert.equal(a.b, 2);
+
+		// console.log("---set b 2")
+		a.b = 2;
+		assert.equal(a.b, 4);
+		assert.deepEqual(log, []);
+
+		// console.log("---set a 1")
+		a.a = 1;
+		assert.equal(a.b, 4);
+		assert.deepEqual(log, []);
+
+		// console.log("---set b 3")
+		log = [];
+		a.b = 3;
+		assert.equal(a.b, 9);
+		assert.deepEqual(log, ["changed"]);
+
+		// console.log('---set a 2')
+		//FIXME: make returning to _ state not reinit `init`
+		a.a = 2;
+		assert.equal(a.b, 9);
+		assert.deepEqual(log, ["changed"]);
+
+		// console.log("---set b 3")
+		a.b = 3;
+		assert.equal(a.b, 6);
+		assert.deepEqual(log, ["changed"]);
+	})
+
+	it("nested states", function(){
+		//FIXME: expand this test
+		var a = applyState({}, {
+			a: {
+				init: 1,
+
+				1: {
+					a: {
+						init: 2
+
+					}
+				},
+
+				2: {
+					x: 1
+				}
+			}
+		})
+
+
+		assert.equal(a.a, 1);
+	})
+
+
+	it("stateful events should be consistent && exclusive (they are noop in other states)", function(){
+		var i = 0;
+		var j = 0;
+		var a = applyState({z: {x:1}}, {
+			x: {
+				init: 1,
+				1: {
+					'click': function(){
+						j++
+					}
+				},
+				2: {
+
+				},
+				3: {
+					'this.z click': 'inc'
+				}
+			},
+
+			inc: function(){
+				i++
+			}
+		});
+
+		var z = a.z;
+
+		enot.fire(z, 'click')
+		enot.fire(a, 'click')
+		assert.equal(i, 0)
+		assert.equal(j, 1)
+
+		a.x = 2;
+
+		enot.fire(z, 'click')
+		enot.fire(a, 'click')
+		assert.equal(i, 0)
+		assert.equal(j, 1)
+
+		// console.log('-------- x = 3')
+		a.x = 3;
+
+		enot.fire(z, 'click')
+		enot.fire(a, 'click')
+		assert.equal(i, 1)
+		assert.equal(j, 1)
+
+		// console.log('------- x = 2')
+		a.x = 2;
+		enot.fire(z, 'click')
+		enot.fire(a, 'click')
+		assert.equal(i, 1)
+		assert.equal(j, 1)
+
+		// console.log('------- x = 1')
+		a.x = 1;
+
+		enot.fire(z, 'click')
+		enot.fire(a, 'click')
+		assert.equal(i, 1)
+		assert.equal(j, 2)
+	})
+
 
 })

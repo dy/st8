@@ -28,6 +28,8 @@ function applyState(target, props){
 	if (!valuesCache.has(target)) valuesCache.set(target, {});
 	if (!statesCache.has(target)) statesCache.set(target, {});
 
+	flattenKeys(props, true);
+
 	//calc dependencies, e.g. b depends on a = {b: {a: true}, a: {}}
 	var deps = {};
 	depsCache.set(target, deps);
@@ -48,8 +50,8 @@ function applyState(target, props){
 					//save parent prop as a dependency for inner prop
 					(deps[innerPropName] = deps[innerPropName] || {})[propName] = true;
 
-					//stub property on target with proper type
-					if (!(innerPropName in target)) {
+					//stub property on target with proper type (avoid uninited calls of inner methods)
+					if (!_.has(target, innerPropName) && !_.has(props, innerPropName)) {
 						if (_.isFn(innerProp)) target[innerPropName] = noop;
 					}
 				}
@@ -143,7 +145,7 @@ function createProps(target, props, deps){
 							var leaveResult = leaveState(target, oldState, value, oldValue);
 
 							//redirect mod, if returned any but self
-							if (leaveResult !== undefined) {
+							if (leaveResult !== undefined && leaveResult !== value) {
 								//ignore entering falsy state
 								if (leaveResult === false) {
 								}
@@ -233,7 +235,9 @@ function initProp(target, name){
 	var initResult = callState(target, propState[initCallbackName], targetValues[name]);
 
 	//bind fn
-	if (initResult !== undefined) enot.on(target, name, initResult);
+	if (initResult !== undefined) {
+		enot.on(target, name, initResult);
+	}
 
 	target[name] = initResult;
 }
@@ -244,6 +248,8 @@ function applyProps(target, props){
 	if (!props) return;
 
 	for (var name in props){
+
+		// console.log('bind', name)
 		if (isStateTransitionName(name)) continue;
 
 		var value = props[name];
@@ -270,8 +276,8 @@ function applyProps(target, props){
 function unapplyProps(target, props){
 	if (!props) return;
 
-	// console.log('unbind', name, value, target[name])
 	for (var name in props){
+		// console.log('unbind', name)
 		if (isStateTransitionName[name]) continue;
 
 		var value = props[name];
@@ -287,6 +293,7 @@ function unapplyProps(target, props){
 
 		else {
 			//unbind fn value
+			// console.log('off', name)
 			enot.off(target, name, value);
 
 			//set value to root initial one
@@ -364,4 +371,27 @@ function unlock(target, name){
 	if (lockCache.get(target)[name]) res = true;
 	lockCache.get(target)[name] = null;
 	return res;
+}
+
+
+
+//Disentangle listed keys
+function flattenKeys(set, deep){
+	//TODO: deal with existing set[key] - extend them?
+
+	for(var keys in set){
+		var value = set[keys];
+
+		if (deep && _.isObject(value)) flattenKeys(value, deep);
+
+		if (/,/.test(keys)){
+			delete set[keys];
+
+			eachCSV(keys, function(key){
+				set[key] = value;
+			});
+		}
+	}
+
+	return set;
 }
