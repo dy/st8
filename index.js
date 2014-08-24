@@ -43,7 +43,7 @@ function applyState(target, props){
 				if (!_.isObject(innerProps)) continue;
 
 				for (var innerPropName in innerProps){
-					if (isStateTransitionName(innerPropName)) continue;
+					if (isStateTransitionName(innerPropName) || innerPropName === propName) continue;
 					var innerProp = innerProps[innerPropName];
 					//save parent prop as a dependency for inner prop
 					(deps[innerPropName] = deps[innerPropName] || {})[propName] = true;
@@ -73,17 +73,24 @@ function applyState(target, props){
 //create accessor on target for every stateful property
 //TODO: getect init fact via existing value in storage (throw away storage objects)
 function createProps(target, props, deps){
+	//create prototypal values
+	var initialValues = {}, initialStates = {};
+	for (var propName in deps){
+		if (!_.isObject(props[propName])){
+			initialValues[propName] = props[propName];
+		}
+	}
+	valuesCache.set(target, Object.create(initialValues));
+
 	for (var name in deps) {
 		var prop = props[name];
 
 		//set initial property states as prototypes
 		statesCache.get(target)[name] = Object.create(_.isObject(prop) ? prop : null);
 
-		//save initial values
+		//create initial value
 		if (_.has(target, name)) {
 			valuesCache.get(target)[name] = target[name];
-		} else if (!_.isObject(prop)) {
-			valuesCache.get(target)[name] = prop;
 		}
 
 		//set initialization lock in order to detect first set call
@@ -263,11 +270,13 @@ function applyProps(target, props){
 function unapplyProps(target, props){
 	if (!props) return;
 
+	// console.log('unbind', name, value, target[name])
 	for (var name in props){
 		if (isStateTransitionName[name]) continue;
 
 		var value = props[name];
 		var state = statesCache.get(target)[name];
+		var values = valuesCache.get(target);
 
 		//delete extended descriptor
 		if (_.isObject(value)){
@@ -278,11 +287,10 @@ function unapplyProps(target, props){
 
 		else {
 			//unbind fn value
-			// console.log('unbind', name, value)
 			enot.off(target, name, value);
 
 			//set value to root initial one
-			target[name] = value;
+			delete values[name];
 		}
 	}
 }

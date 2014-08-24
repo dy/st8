@@ -529,4 +529,357 @@ describe("State cases", function(){
 		assert.equal(a.a, 2)
 	});
 
+
+	it("enter state returned from before/after, if any", function(){
+		var a = applyState({}, {
+			a: {
+				init: 1,
+
+					1: {
+						before: function(){
+							// console.log("before 1")
+							return 2
+						}
+					},
+					2: {
+						before: function(){
+							// console.log("before 2")
+							return 3;
+						}
+					},
+					3: {
+						after: function(){
+							// console.log("after 3")
+							return 4
+						}
+					},
+					4: {
+						before: function(){
+							// console.log("before 4")
+							return 5
+						}
+					}
+
+			}
+		})
+
+		assert.equal(a.a, 3)
+		a.a = 2;
+		// console.log(a.a)
+		assert.equal(a.a, 5)
+	})
+
+	it("enter remainder state, if nothing other matched", function(){
+		var log = [];
+
+		var a = applyState({}, {
+			a: {
+				init: 1,
+
+				1: {
+					before: function(){
+						// console.log("before 1")
+						return 3
+					}
+				},
+				2: {
+					before: function(){
+						// console.log("before 2")
+						return 4
+					}
+				},
+				_: {
+					before: function(){
+						// console.log("_before")
+						log.push("_before")
+					},
+					after: function(){
+						// console.log("_after")
+						log.push("_after")
+					}
+				}
+
+			}
+		})
+
+		// console.log(A.properties)
+
+		assert.equal(a.a, 3);
+		assert.deepEqual(log, ["_before"]);
+
+		log = [];
+		a.a = 2;
+		assert.equal(a.a, 4);
+		assert.deepEqual(log, ["_after", "_before"])
+
+		log = [];
+		a.a = 8;
+		assert.equal(a.a, 8);
+		assert.deepEqual(log, ["_after", "_before"])
+	});
+
+
+
+
+	it("keep states callbacks context", function(){
+		var a = document.createElement("div")
+		var i = 0
+		var a = applyState({}, {
+			a: {
+				1: {
+					before: function(){
+						i++
+						assert.equal(this, a)
+					},
+					after: function(){
+						i++
+						assert.equal(this, a)
+					},
+					fn: function(){
+						i++
+						assert.equal(this, a)
+					}
+				}
+			}
+		})
+
+		a.a = 1;
+		enot.fire(a, "fn")
+		a.a = 2
+		assert.equal(i, 3)
+	})
+
+	it("redefine property behaviour by descriptors defined in states of other property", function(){
+		var a = applyState({}, {
+			a: {
+				init: 3
+			},
+			x: {
+				1: {
+					a: {
+						get: function(){
+							return 1
+						}
+					}
+				},
+				2: {
+					a: {
+						get: function(){
+							return 2
+						}
+					}
+				}
+			}
+		});
+
+		assert.equal(a.a, 3);
+
+		a.a = 4;
+		assert.equal(a.a, 4);
+
+		a.x = 1;
+		assert.equal(a.a, 1)
+
+		a.x = 2;
+		assert.equal(a.a, 2)
+
+		//TODO: unapply specific getter
+		// a.x = 3;
+		// assert.equal(a.a, 4);
+	})
+
+	it("recognize function as a short state notation of `before` method", function(){
+		var a = applyState({}, {
+			a: {
+				init: 1,
+				1: {},
+				_: function(){ return 1 }
+
+			}
+		})
+
+		// console.log(A.properties)
+		//FIXME: parse states shortcuts
+
+		assert.equal(a.a, 1);
+		a.a = 2;
+		assert.equal(a.a, 1);
+	})
+
+
+
+
+	it("catch state recursions", function(){
+		var a = applyState({}, {
+			a: {
+				init: 1,
+
+				1: function(){
+					// console.log("before 1")
+					return 2;
+				},
+
+				2: function(){
+					// console.log("before 2")
+					return 1;
+				}
+
+			}
+		});
+
+
+		assert.equal(a.a, 1);
+		// assert.throw(function(){}, "Too many redirects");
+	})
+
+
+	it("redefine callbacks in states", function(){
+		var log = [];
+		var a = applyState({cb: function(){
+				// console.log("extra cb")
+				log.push("ex")
+			}}, {
+			a: {
+				init: 1,
+
+				2: {
+					meth: function(){
+						log.push("2")
+					},
+					cb: function(){
+						// console.log("2cb")
+						log.push("2cb")
+					},
+					cbAlias: null
+				}
+			},
+
+			cbAlias: 'cb',
+			cbAlias2: 'cb',
+
+			meth: function(){
+				log.push("default")
+				// console.log("meth")
+			},
+			cb: function(){
+				// console.log("default cb")
+				log.push("default cb")
+			}
+		})
+
+		assert.deepEqual(log, [])
+
+		// A.meth();
+		enot.fire(a, "meth")
+		enot.fire(a, "cb")
+		assert.sameMembers(log, ["default", "ex"])
+		log = [];
+		enot.fire(a, "cbAlias")
+		assert.deepEqual(log, ["ex"])
+		enot.fire(a, "cbAlias2")
+		assert.deepEqual(log, ["ex", "ex"])
+
+		log = [];
+		// console.log("---------a = 2")
+		a.a = 2;
+		// A.meth();
+		enot.fire(a, "meth")
+		enot.fire(a, "cb")
+		assert.sameMembers(log, ["2", "2cb"])
+		enot.fire(a, "cbAlias")
+		assert.sameMembers(log, ["2", "2cb"])
+		enot.fire(a, "cbAlias2")
+		assert.sameMembers(log, ["2", "2cb", "2cb"])
+
+		log = [];
+		// console.log("------a=1")
+		a.a = 1;
+		A.fn.meth();
+		enot.fire(a, "cb")
+		assert.sameMembers(log, ["default", "default cb"])
+		enot.fire(a, "cbAlias")
+		assert.sameMembers(log, ["default", "default cb", "default cb"])
+		enot.fire(a, "cbAlias2")
+		assert.sameMembers(log, ["default", "default cb", "default cb", "default cb"])
+	})
+
+	it("redefine variables in states", function(){
+		var a = applyState({}, {
+			a: {
+				init: 1,
+
+				2: {
+					b: 2,
+					c: 2,
+					d: "d"
+				}
+			},
+
+			b: 1,
+			c: {c: 1},
+			d: "str"
+		})
+
+		// console.log("---- new A")
+
+		assert.equal(a.a, 1)
+		assert.equal(a.b, 1)
+		assert.equal(a.c, undefined)
+		assert.equal(a.d, "str")
+		// console.log('---- a = 2')
+		a.a = 2;
+		assert.equal(a.b, 2)
+		assert.equal(a.c, 2)
+		assert.equal(a.d, "d")
+	})
+
+
+	it("redefine complicated nested stateful descirptors with self-links", function(){
+		var a = applyState({}, {
+			a: {
+				init: 1,
+				1: 2,
+				2: function(){return 3},
+				3: {a: 4},
+				4: {
+					before: 5
+				},
+				5: {
+					before: function(){
+						return 6
+					}
+				},
+				6: {
+					a: {
+						init: 7
+					}
+				}
+			}
+		})
+		// assert.equal(a.a, 7)
+	})
+
+	it("reset state variables to default values", function(){
+		var a = applyState({}, {
+			v: {
+				init: 1,
+
+				2: {
+					a: 2
+				}
+			},
+
+			a: 1
+		})
+
+
+		assert.equal(a.a, 1)
+
+		a.v = 2;
+		assert.equal(a.a, 2)
+
+		a.v = 1;
+		assert.equal(a.a, 1)
+	})
+
 })
