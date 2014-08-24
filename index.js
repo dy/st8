@@ -109,7 +109,7 @@ function createProps(target, props, deps){
 			})(name, target),
 			set: (function(name, target){
 				return function(value){
-					console.log('set', name, value)
+					// console.log('set', name, value)
 					var propState = statesCache.get(target)[name];
 					var targetValues = valuesCache.get(target);
 
@@ -134,6 +134,19 @@ function createProps(target, props, deps){
 						if (!lock(target, leaveCallbackName + oldState)) {
 							//try to enter new state (if redirect happens)
 							var leaveResult = leaveState(target, oldState, value, oldValue);
+
+							//redirect mod, if returned any but self
+							if (leaveResult !== undefined) {
+								//ignore entering falsy state
+								if (leaveResult === false) {
+								}
+								//enter new result
+								else {
+									target[name] = leaveResult;
+								}
+
+								return unlock(target, leaveCallbackName + oldState);
+							}
 
 							unlock(target, leaveCallbackName + oldState);
 

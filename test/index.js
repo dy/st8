@@ -476,4 +476,57 @@ describe("State cases", function(){
 		assert.equal(a.a, 5)
 	});
 
+
+
+
+	it("prevent entering state if before returned false", function(){
+		var a = applyState({}, {
+			a: {
+				init: 1,
+
+				1: {
+					before: function(){
+						// console.log("before 1")
+					}
+				},
+				2: {
+					before: function(){
+						// console.log("before 2")
+						return false;
+					}
+				}
+
+			}
+		})
+
+		a.a = 2;
+		assert.equal(a.a, 1)
+	})
+
+	it("prevent leaving state if after returned false", function(){
+		var a = applyState({}, {
+			a: {
+				init: 1,
+
+				1: {
+					before: function(){
+						// console.log("before 1")
+					}
+				},
+				2: {
+					after: function(){
+						// console.log("after 2")
+						return false;
+					}
+				}
+
+			}
+		})
+
+		a.a = 2;
+		assert.equal(a.a, 2)
+		a.a = 1;
+		assert.equal(a.a, 2)
+	});
+
 })
