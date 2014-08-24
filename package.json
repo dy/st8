@@ -6,11 +6,13 @@
   "dependencies": {
     "polymer-weakmap": "latest",
     "enot": "latest",
-    "extend": "~1.3.0"
+    "mutypes": "latest",
+    "each-csv": "latest"
   },
   "devDependencies": {
     "chai": "~1.9.1",
-    "mocha": "~1.21.4"
+    "mocha": "~1.21.4",
+    "require-stub": "latest"
   },
   "scripts": {
     "test": "mocha"

@@ -1,3 +1,5 @@
+var enot = require('enot');
+
 describe("State cases", function(){
 
 	it("accessor of outer state defined in inner state", function(){
@@ -98,6 +100,7 @@ describe("State cases", function(){
 
 				get: {
 					before: function(){
+						// console.log('before get')
 						log.push('bg')
 
 					},
@@ -317,6 +320,56 @@ describe("State cases", function(){
 		a.a = undefined;
 		assert.equal(i, 3 );
 		assert.equal(o, 2 );
+
+	})
+
+
+
+	it("unbind/bind events when component switches", function(){
+		var v;
+		var a = applyState({}, {
+			a: {
+				init: 1,
+
+				1: {
+					e: function(){
+						v = 1
+					}
+				},
+				2: {
+					e: function(){
+						v = 2
+					}
+				},
+				3: {
+					e: 'f'
+				}
+
+			},
+			f: function(){
+				v = 3;
+			}
+		});
+
+		assert.equal(v, undefined)
+		// console.log("-----------dispatch e")
+		enot.fire(a, "e");
+		assert.equal(v, 1)
+		// console.log('-------a=2')
+		a.a = 2;
+		assert.equal(v, 1)
+		enot.fire(a, "e");
+		assert.equal(v, 2)
+		// console.log('-------a=3')
+		a.a = 3;
+		assert.equal(v, 2);
+		// console.log('-------fire e')
+		enot.fire(a, "e");
+		assert.equal(v, 3);
+		a.a = 1;
+		assert.equal(v, 3);
+		enot.fire(a, "e");
+		assert.equal(v, 1);
 
 	})
 

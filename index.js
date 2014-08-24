@@ -1,5 +1,5 @@
 var enot = require('enot');
-var _ = require('_');
+var _ = require('mutypes');
 
 module.exports = applyState;
 
@@ -80,7 +80,11 @@ function createProps(target, props, deps){
 		statesCache.get(target)[name] = Object.create(_.isObject(prop) ? prop : null);
 
 		//save initial values
-		valuesCache.get(target)[name] = target[name];
+		if (_.has(target, name)) {
+			valuesCache.get(target)[name] = target[name];
+		} else if (!_.isObject(prop)) {
+			valuesCache.get(target)[name] = prop;
+		}
 
 		//set initialization lock in order to detect first set call
 		lock(target, initCallbackName + name);
@@ -194,9 +198,13 @@ function initProp(target, name){
 
 	//mark dependency as resolved (ignore next init calls)
 	deps[name] = null;
-
 	//call init with target initial value stored in targetValues
-	target[name] = callState(target, propState[initCallbackName], targetValues[name]);
+	var initResult = callState(target, propState[initCallbackName], targetValues[name]);
+
+	//bind fn
+	if (initResult !== undefined) enot.on(target, name, initResult);
+
+	target[name] = initResult;
 }
 
 
@@ -219,9 +227,9 @@ function applyProps(target, props){
 
 		else {
 			//bind fn value as a method
-			if (_.isFn(value)){
-				enot.on(name, value);
-			}
+			enot.on(target, name, value);
+
+			//assign value
 			target[name] = value;
 		}
 	}
@@ -245,10 +253,9 @@ function unapplyProps(target, props){
 		}
 
 		else {
-			//unbind fn value as a method
-			if (_.isFn(value)){
-				enot.off(name, value);
-			}
+			//unbind fn value
+			// console.log('unbind', name, value)
+			enot.off(target, name, value);
 
 			//set value to root initial one
 			target[name] = value;
