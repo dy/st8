@@ -371,6 +371,109 @@ describe("State cases", function(){
 		enot.fire(a, "e");
 		assert.equal(v, 1);
 
-	})
+	});
+
+	it("fire state events within before/after", function(){
+		var i = 0, y = 0;
+		var a = applyState({}, {
+			v: {
+				_: {
+					before: function(){
+						// console.log("_:before", this)
+						enot.fire(this, "a")
+					},
+					after: function() {
+						// console.log("_:after")
+						enot.fire(this, "a")
+					},
+					a: function() {
+						// console.log("_:a")
+						i++
+					}
+				},
+
+				1: {
+					before: function() {
+						// console.log("1:before")
+						enot.fire(this, "a")
+					},
+					after: function() {
+						// console.log("1:after")
+						enot.fire(this, "a")
+					},
+					a: 'b'
+				}
+			},
+			b: function(){
+				// console.log("b")
+				y++
+			}
+		})
+
+		assert.equal(i, 1)
+		assert.equal(y, 0)
+		enot.fire(a, "a")
+		assert.equal(i, 2)
+		// console.log("------ v = 1")
+		a.v = 1;
+		assert.equal(i, 3)
+		assert.equal(y, 1)
+		// console.log("------ v = undefined")
+		a.v = undefined
+		assert.equal(i, 4)
+		assert.equal(y, 2)
+
+	});
+
+
+	it("switch state from within `before` and `after` to any other state", function(){
+		var a = applyState({}, {
+			a: {
+				init: 1,
+				1: {
+					before: function(){
+						// console.log("before 1")
+						this.a = 2
+					},
+					after: function(){
+						// console.log("after 1")
+					}
+				},
+				2: {
+					before: function(){
+						// console.log("before 2")
+						this.a = 3
+					},
+					after: function(){
+						// console.log("after 2")
+					}
+				},
+				3: {
+					before: function(){
+						// console.log("before 3")
+					},
+					after: function(){
+						// console.log("after 3")
+						this.a = 4
+					}
+				},
+				4: {
+					before: function(){
+						// console.log("before 4")
+						this.a = 5
+					},
+					after: function(){
+						// console.log("after 4")
+					}
+				}
+			}
+		})
+
+		assert.equal(a.a, 3)
+		// console.log("---")
+		a.a = 2
+		// console.log(a.a)
+		assert.equal(a.a, 5)
+	});
 
 })

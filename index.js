@@ -130,10 +130,11 @@ function createProps(target, props, deps){
 
 						//leaving an old state unbinds all events of the old state
 						var oldState = _.has(propState, oldValue) ? propState[oldValue] : propState._;
-						unapplyProps(target, oldState);
 
 						//try to enter new state (if redirect happens)
 						var leaveResult = leaveState(target, oldState, value, oldValue);
+
+						unapplyProps(target, oldState);
 					}
 
 					//save new self value
@@ -302,9 +303,13 @@ function leaveState(target, state, a){
 	// console.log('leave', state)
 	if (!state) return a;
 
-	if (!state[leaveCallbackName]) return state[leaveCallbackName];
+	if (!state[leaveCallbackName]) {
+		return state[leaveCallbackName];
+	}
 
-	if (_.isFn(state[leaveCallbackName])) return state[leaveCallbackName].call(target, a)
+	if (_.isFn(state[leaveCallbackName])) {
+		return state[leaveCallbackName].call(target, a)
+	}
 }
 
 
