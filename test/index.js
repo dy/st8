@@ -1212,4 +1212,134 @@ describe("State cases", function(){
 		assert.equal(a.a, 1);
 		assert.equal(a.b, 2);
 	})
+
+
+	it("same event in different states", function(){
+		var log = [];
+		var a = applyState({}, {
+			a: {
+				_: {
+					x: function(){log.push(1)}
+				},
+				2: {
+					x: function(){}
+				}
+			},
+
+			b: {
+				_: {
+					x: function(){log.push(2)}
+				}
+			}
+		});
+
+		enot.fire(a, 'x');
+		assert.sameMembers(log, [1,2])
+
+		// console.log('------- a.a = 2')
+		a.a = 2;
+		enot.fire(a, 'x');
+		assert.sameMembers(log, [1,2,2])
+	})
+
+
+	it("events bound via on/off", function(){
+		var i = 0;
+		var inc = function(){
+			i++
+			// console.log("inc", i)
+		}
+		var a = applyState({}, {
+			a: inc//function(){console.log(1)}
+		})
+
+
+		enot.fire(a, "a");
+		assert.equal(i, 1);
+
+		// console.log('--------add listener')
+		//NOTE: inc shouldn’t be bound twice, it’s specifics of `addEventListener`
+		enot.on(a, "a",
+			inc //inc
+		);
+
+		enot.fire(a, "a");
+		assert.equal(i, 3);
+
+		i = 0;
+
+		// console.log('--------remove listener')
+		enot.off(a, "a", inc)
+
+		enot.fire(a, "a");
+		assert.equal(i, 1);
+	})
+
+
+	it("mind context in all possible events", function(){
+		var i = 0;
+		var a = {target: {x:{}}};
+		a = applyState(a, {
+			'@target x:one': function(){
+				assert.equal(this, a);
+			},
+
+			//basic descriptor
+			a: {
+				init: function(){
+					assert.equal(this, a);
+				},
+				get: function(){
+					assert.equal(this, a);
+				},
+				set: function(){
+					assert.equal(this, a);
+				},
+				changed: function(){
+					assert.equal(this, a);
+				},
+				1: function(){
+					assert.equal(this, a);
+				},
+				2: {
+					before: function(){
+						assert.equal(this, a);
+					},
+					'@target y': function(){
+						i++
+						// console.log(this, a)
+						assert.equal(this, a);
+					},
+					after: function(){
+						assert.equal(this, a);
+					}
+				},
+				_: function(){
+					assert.equal(this, a);
+				}
+			},
+
+			'@target.x z': function(){
+				i++
+				assert.equal(this, a);
+			}
+
+		})
+
+
+		// console.log("----a=1")
+		a.a = 1;
+		// console.log("----a=2")
+		a.a = 2;
+		enot.fire(a.target, 'x');
+		enot.fire(a.target, 'y');
+		assert.equal(i, 1);
+		// console.log("----a=3")
+		a.a = 3;
+
+
+		// console.log("----dispatch z")
+		enot.fire(a.target.x, 'z', true, true);
+		assert.equal(i, 2);
+	})
 })

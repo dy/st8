@@ -33,12 +33,16 @@ var statesCache = new WeakMap;
 //list of dependencies for the right init order
 var depsCache = new WeakMap;
 
+//map of callbacks active on target
+var activeCallbacks = new WeakMap;
+
 
 //apply state to a target
 function applyState(target, props){
 	//create target private storage
 	if (!valuesCache.has(target)) valuesCache.set(target, {});
 	if (!statesCache.has(target)) statesCache.set(target, {});
+	if (!activeCallbacks.has(target)) activeCallbacks.set(target, {});
 
 	flattenKeys(props, true);
 
@@ -258,6 +262,7 @@ function initProp(target, name){
 }
 
 
+
 //take over properties by target
 function applyProps(target, props){
 	if (!props) return;
@@ -278,11 +283,16 @@ function applyProps(target, props){
 		}
 
 		else {
-			//bind fn value as a method
-			eOn(target, name, value);
-
 			//assign value
 			target[name] = value;
+
+			//bind fn value as a method
+			if (isFn(value)) {
+				//save bound callback
+				var value = value.bind(target);
+				activeCallbacks.get(target)[name] = value;
+			}
+			eOn(target, name, value);
 		}
 	}
 }
@@ -295,13 +305,13 @@ function unapplyProps(target, props){
 		// console.log('unbind', name)
 		if (isStateTransitionName[name]) continue;
 
-		var value = props[name];
+		var propValue = props[name];
 		var state = statesCache.get(target)[name];
 		var values = valuesCache.get(target);
 
 		//delete extended descriptor
-		if (isObject(value)){
-			for (var propName in value){
+		if (isObject(propValue)){
+			for (var propName in propValue){
 				delete state[propName]
 			}
 		}
@@ -309,7 +319,14 @@ function unapplyProps(target, props){
 		else {
 			//unbind fn value
 			// console.log('off', name)
-			eOff(target, name, value);
+			if (isFn(propValue)) {
+				var callbacks = activeCallbacks.get(target);
+				if (callbacks[name]) {
+					propValue = callbacks[name];
+					callbacks[name] = null;
+				}
+			}
+			eOff(target, name, propValue);
 
 			//set value to root initial one
 			delete values[name];
