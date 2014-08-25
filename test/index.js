@@ -1193,4 +1193,23 @@ describe("State cases", function(){
 	})
 
 
+	it("undefined get/set result", function(){
+		var a = applyState({}, {
+			a: {
+				init: 1,
+				set: function(a){
+
+				}
+			},
+			b: {
+				init: 2,
+				get: function(){
+
+				}
+			}
+		});
+
+		assert.equal(a.a, 1);
+		assert.equal(a.b, 2);
+	})
 })

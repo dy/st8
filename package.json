@@ -4,15 +4,15 @@
   "description": "Control state of any object",
   "main": "index.js",
   "dependencies": {
-    "polymer-weakmap": "latest",
-    "enot": "latest",
-    "mutypes": "latest",
-    "each-csv": "latest"
+    "polymer-weakmap": "*",
+    "enot": "*",
+    "mutypes": "*",
+    "each-csv": "*"
   },
   "devDependencies": {
     "chai": "~1.9.1",
     "mocha": "~1.21.4",
-    "require-stub": "latest"
+    "require-stub": "*"
   },
   "scripts": {
     "build": "npm run min-index && browserify index.min.js --standalone st8 > dist/st8.js && npm run minify && npm test",

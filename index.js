@@ -116,16 +116,17 @@ function createProps(target, props, deps){
 				return function(){
 					// console.group('get ', name)
 					var propState = statesCache.get(target)[name];
-					var targetValues = valuesCache.get(target);
+					var value = valuesCache.get(target)[name];
 
 					//init, if is not
 					initProp(target, name);
 
 					//getting prop value just returns it’s real value
-					var getValue = callState(target, propState[getterName], targetValues[name]);
+					var getResult = callState(target, propState[getterName], value);
+					if (getResult !== undefined) value = getResult;
 
 					// console.groupEnd();
-					return getValue;
+					return value;
 				}
 			})(name, target),
 			set: (function(name, target){
@@ -141,7 +142,7 @@ function createProps(target, props, deps){
 
 					//1. apply setter to value
 					var setResult = callState(target, propState[setterName], value, oldValue);
-					value = setResult;
+					if (setResult !== undefined) value = setResult;
 
 					//FIXME: catch initial call better way
 					//ignore leaving absent initial state
@@ -248,6 +249,8 @@ function initProp(target, name){
 
 	//bind fn
 	if (initResult !== undefined) {
+		//make sure context is kept bound to the target
+		if (isFn(initResult)) initResult = initResult.bind(target);
 		eOn(target, name, initResult);
 	}
 
