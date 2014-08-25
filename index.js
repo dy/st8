@@ -1,17 +1,17 @@
 var enot = require('enot');
 var _ = require('mutypes');
+var eachCSV = require('each-csv');
 
 module['exports'] = applyState;
 
-
+//externs
 var isObject = _['isObject'];
 var has = _['has'];
 var isFn = _['isFn'];
 var isPlain = _['isPlain'];
 
-var on = enot['on'];
-var off = enot['off'];
-var fire = enot['fire'];
+var eOn = enot['on'];
+var eOff = enot['off'];
 
 
 //tech names
@@ -22,6 +22,7 @@ var changedCallbackName = 'changed';
 var setterName = 'set';
 var getterName = 'get';
 var remainderStateName = '_';
+
 
 //values keyed by target
 var valuesCache = new WeakMap;
@@ -247,7 +248,7 @@ function initProp(target, name){
 
 	//bind fn
 	if (initResult !== undefined) {
-		on(target, name, initResult);
+		eOn(target, name, initResult);
 	}
 
 	target[name] = initResult;
@@ -275,7 +276,7 @@ function applyProps(target, props){
 
 		else {
 			//bind fn value as a method
-			on(target, name, value);
+			eOn(target, name, value);
 
 			//assign value
 			target[name] = value;
@@ -305,7 +306,7 @@ function unapplyProps(target, props){
 		else {
 			//unbind fn value
 			// console.log('off', name)
-			off(target, name, value);
+			eOff(target, name, value);
 
 			//set value to root initial one
 			delete values[name];

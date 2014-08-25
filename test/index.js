@@ -1,5 +1,13 @@
+//stub element
+if (typeof global.Element === 'undefined') global.Element = function(){};
+if (typeof global.HTMLElement === 'undefined') global.HTMLElement = function(){};
+if (typeof global.Event === 'undefined') global.Event = function(){};
+
+var assert = require('chai').assert;
 var enot = require('enot');
-var applyState = require('st8')
+var applyState = require('../index');
+
+
 
 describe("State cases", function(){
 
