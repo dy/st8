@@ -191,7 +191,7 @@ function createProps(target, props, deps){
 
 					var newStateName = has(propState, value) ? value : remainderStateName;
 
-					if (!lock(target, newStateName)) {
+					if (!lock(target, name + newStateName)) {
 						//new state applies new props: binds events, sets values
 						var newState = propState[newStateName];
 						applyProps(target, newState);
@@ -210,10 +210,10 @@ function createProps(target, props, deps){
 								target[name] = enterResult;
 							}
 
-							return unlock(target, newStateName);
+							return unlock(target, name + newStateName);
 						}
 
-						unlock(target, newStateName);
+						unlock(target, name + newStateName);
 					}
 
 
