@@ -1,6 +1,6 @@
 {
   "name": "st8",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Control state of any object",
   "main": "index.js",
   "dependencies": {
@@ -15,7 +15,10 @@
     "require-stub": "latest"
   },
   "scripts": {
-    "test": "mocha"
+    "build": "npm run min-index && browserify index.min.js --standalone enot > dist/enot.js && npm run minify && npm test",
+    "test": "mocha test/index.js",
+    "minify": "ccjs dist/enot.js --compilation_level=SIMPLE --language_in=ECMASCRIPT5_STRICT > dist/enot.min.js",
+    "min-index": "ccjs index.js --language_in=ECMASCRIPT5_STRICT --compilation_level=ADVANCED --formatting=PRETTY_PRINT > index.min.js"
   },
   "repository": {
     "type": "git",

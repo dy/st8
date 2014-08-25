@@ -1,16 +1,27 @@
 var enot = require('enot');
 var _ = require('mutypes');
 
-module.exports = applyState;
+module['exports'] = applyState;
 
 
+var isObject = _['isObject'];
+var has = _['has'];
+var isFn = _['isFn'];
+var isPlain = _['isPlain'];
 
+var on = enot['on'];
+var off = enot['off'];
+var fire = enot['fire'];
+
+
+//tech names
 var enterCallbackName = 'before';
 var leaveCallbackName = 'after';
 var initCallbackName = 'init';
 var changedCallbackName = 'changed';
 var setterName = 'set';
 var getterName = 'get';
+var remainderStateName = '_';
 
 //values keyed by target
 var valuesCache = new WeakMap;
@@ -38,11 +49,11 @@ function applyState(target, props){
 		deps[propName] = deps[propName] || {};
 
 		var prop = props[propName];
-		if (_.isObject(prop)) {
+		if (isObject(prop)) {
 			for (var stateName in prop){
 				var innerProps = prop[stateName];
 				//pass non-object inner props
-				if (!_.isObject(innerProps)) continue;
+				if (!isObject(innerProps)) continue;
 
 				for (var innerPropName in innerProps){
 					if (isStateTransitionName(innerPropName) || innerPropName === propName) continue;
@@ -51,8 +62,8 @@ function applyState(target, props){
 					(deps[innerPropName] = deps[innerPropName] || {})[propName] = true;
 
 					//stub property on target with proper type (avoid uninited calls of inner methods)
-					if (!_.has(target, innerPropName) && !_.has(props, innerPropName)) {
-						if (_.isFn(innerProp)) target[innerPropName] = noop;
+					if (!has(target, innerPropName) && !has(props, innerPropName)) {
+						if (isFn(innerProp)) target[innerPropName] = noop;
 					}
 				}
 			}
@@ -78,7 +89,7 @@ function createProps(target, props, deps){
 	//create prototypal values
 	var initialValues = {}, initialStates = {};
 	for (var propName in deps){
-		if (!_.isObject(props[propName])){
+		if (!isObject(props[propName])){
 			initialValues[propName] = props[propName];
 		}
 	}
@@ -88,10 +99,10 @@ function createProps(target, props, deps){
 		var prop = props[name];
 
 		//set initial property states as prototypes
-		statesCache.get(target)[name] = Object.create(_.isObject(prop) ? prop : null);
+		statesCache.get(target)[name] = Object.create(isObject(prop) ? prop : null);
 
 		//create initial value
-		if (_.has(target, name)) {
+		if (has(target, name)) {
 			valuesCache.get(target)[name] = target[name];
 		}
 
@@ -138,7 +149,7 @@ function createProps(target, props, deps){
 						if (value === oldValue) return;
 
 						//leaving an old state unbinds all events of the old state
-						var oldState = _.has(propState, oldValue) ? propState[oldValue] : propState._;
+						var oldState = has(propState, oldValue) ? propState[oldValue] : propState[remainderStateName];
 
 						if (!lock(target, leaveCallbackName + oldState)) {
 							//try to enter new state (if redirect happens)
@@ -172,7 +183,7 @@ function createProps(target, props, deps){
 					//save new self value
 					targetValues[name] = value;
 
-					var newStateName = _.has(propState, value) ? value : '_'
+					var newStateName = has(propState, value) ? value : remainderStateName;
 
 					if (!lock(target, newStateName)) {
 						//new state applies new props: binds events, sets values
@@ -236,7 +247,7 @@ function initProp(target, name){
 
 	//bind fn
 	if (initResult !== undefined) {
-		enot.on(target, name, initResult);
+		on(target, name, initResult);
 	}
 
 	target[name] = initResult;
@@ -256,7 +267,7 @@ function applyProps(target, props){
 		var state = statesCache.get(target)[name];
 
 		//extendify descriptor value
-		if (_.isObject(value)){
+		if (isObject(value)){
 			for (var propName in value){
 				state[propName] = value[propName]
 			}
@@ -264,7 +275,7 @@ function applyProps(target, props){
 
 		else {
 			//bind fn value as a method
-			enot.on(target, name, value);
+			on(target, name, value);
 
 			//assign value
 			target[name] = value;
@@ -285,7 +296,7 @@ function unapplyProps(target, props){
 		var values = valuesCache.get(target);
 
 		//delete extended descriptor
-		if (_.isObject(value)){
+		if (isObject(value)){
 			for (var propName in value){
 				delete state[propName]
 			}
@@ -294,7 +305,7 @@ function unapplyProps(target, props){
 		else {
 			//unbind fn value
 			// console.log('off', name)
-			enot.off(target, name, value);
+			off(target, name, value);
 
 			//set value to root initial one
 			delete values[name];
@@ -311,18 +322,18 @@ function callState(target, state, a1, a2) {
 	}
 
 	//init: 123
-	else if (_.isPlain(state)) {
+	else if (isPlain(state)) {
 		return state;
 	}
 
 	//init: function(){}
-	else if (_.isFn(state)) {
+	else if (isFn(state)) {
 		return state.call(target, a1, a2);
 	}
 
-	else if (_.isObject(state)) {
+	else if (isObject(state)) {
 		//init: {before: function(){}}
-		if (_.isFn(state[enterCallbackName])) {
+		if (isFn(state[enterCallbackName])) {
 			return state[enterCallbackName].call(target, a1, a2);
 		}
 		//init: {before: 123}
@@ -345,7 +356,7 @@ function leaveState(target, state, a){
 		return state[leaveCallbackName];
 	}
 
-	if (_.isFn(state[leaveCallbackName])) {
+	if (isFn(state[leaveCallbackName])) {
 		return state[leaveCallbackName].call(target, a)
 	}
 }
@@ -382,7 +393,7 @@ function flattenKeys(set, deep){
 	for(var keys in set){
 		var value = set[keys];
 
-		if (deep && _.isObject(value)) flattenKeys(value, deep);
+		if (deep && isObject(value)) flattenKeys(value, deep);
 
 		if (/,/.test(keys)){
 			delete set[keys];

@@ -1,4 +1,5 @@
 var enot = require('enot');
+var applyState = require('st8')
 
 describe("State cases", function(){
 
