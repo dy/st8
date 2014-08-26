@@ -115,6 +115,8 @@ function createProps(target, props){
 		if (ignoreProps[name]) {
 			//handle listener
 			if (isFn(prop))	eOn(target, name, props[name])
+			deps[name] = null;
+			continue;
 		}
 
 		//set initial property states as prototypes
