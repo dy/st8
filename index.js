@@ -36,13 +36,17 @@ var depsCache = new WeakMap;
 //map of callbacks active on target
 var activeCallbacks = new WeakMap;
 
+var ignoreCache = new WeakMap;
+
 
 //apply state to a target
-function applyState(target, props){
+//native properties sohuld be passed as a blacklist
+function applyState(target, props, ignoreProps){
 	//create target private storage
 	if (!valuesCache.has(target)) valuesCache.set(target, {});
 	if (!statesCache.has(target)) statesCache.set(target, {});
 	if (!activeCallbacks.has(target)) activeCallbacks.set(target, {});
+	if (!ignoreCache.has(target)) ignoreCache.set(target, ignoreProps || {});
 
 	flattenKeys(props, true);
 
@@ -62,6 +66,7 @@ function applyState(target, props){
 
 				for (var innerPropName in innerProps){
 					if (isStateTransitionName(innerPropName) || innerPropName === propName) continue;
+
 					var innerProp = innerProps[innerPropName];
 					//save parent prop as a dependency for inner prop
 					(deps[innerPropName] = deps[innerPropName] || {})[propName] = true;
@@ -76,7 +81,7 @@ function applyState(target, props){
 	}
 
 	//create accessors
-	createProps(target, props, deps);
+	createProps(target, props);
 
 
 	//init values
@@ -90,7 +95,10 @@ function applyState(target, props){
 
 //create accessor on target for every stateful property
 //TODO: getect init fact via existing value in storage (throw away storage objects)
-function createProps(target, props, deps){
+function createProps(target, props){
+	var deps = depsCache.get(target);
+	var ignoreProps = ignoreCache.get(target);
+
 	//create prototypal values
 	var initialValues = {}, initialStates = {};
 	for (var propName in deps){
@@ -103,10 +111,16 @@ function createProps(target, props, deps){
 	for (var name in deps) {
 		var prop = props[name];
 
+		//handle specific ignore case
+		if (ignoreProps[name]) {
+			//handle listener
+			if (isFn(prop))	eOn(target, name, props[name])
+		}
+
 		//set initial property states as prototypes
 		statesCache.get(target)[name] = Object.create(isObject(prop) ? prop : null);
 
-		//create initial value
+		//save initial value
 		if (has(target, name)) {
 			valuesCache.get(target)[name] = target[name];
 		}
@@ -188,7 +202,6 @@ function createProps(target, props, deps){
 
 					//save new self value
 					targetValues[name] = value;
-
 					var newStateName = has(propState, value) ? value : remainderStateName;
 
 					if (!lock(target, name + newStateName)) {
@@ -236,7 +249,7 @@ function initProp(target, name){
 	// console.log('init', name, 'dependent on', deps[name]);
 
 	var propState = statesCache.get(target)[name];
-	var targetValues = valuesCache.get(target);
+	var initValues = valuesCache.get(target);
 
 	//init dependens things beforehead
 	for (var depPropName in deps[name]){
@@ -248,19 +261,26 @@ function initProp(target, name){
 
 	//mark dependency as resolved (ignore next init calls)
 	deps[name] = null;
+
 	//call init with target initial value stored in targetValues
-	var initResult = callState(target, propState[initCallbackName], targetValues[name]);
-
-	//bind fn
-	if (initResult !== undefined) {
-		//make sure context is kept bound to the target
-		if (isFn(initResult)) initResult = initResult.bind(target);
-		eOn(target, name, initResult);
-	}
-
-	target[name] = initResult;
+	var initResult = callState(target, propState[initCallbackName], initValues[name]);
+	applyValue(target, name, initResult);
 }
 
+
+//set value on target
+function applyValue(target, name, value){
+	target[name] = value;
+
+	//make sure context is kept bound to the target
+	if (isFn(value)) {
+		value = value.bind(target);
+		activeCallbacks.get(target)[name] = value;
+	}
+
+	//NOTE: this causes get call
+	eOn(target, name, value);
+}
 
 
 //take over properties by target
@@ -283,16 +303,7 @@ function applyProps(target, props){
 		}
 
 		else {
-			//assign value
-			target[name] = value;
-
-			//bind fn value as a method
-			if (isFn(value)) {
-				//save bound callback
-				var value = value.bind(target);
-				activeCallbacks.get(target)[name] = value;
-			}
-			eOn(target, name, value);
+			applyValue(target, name, value)
 		}
 	}
 }

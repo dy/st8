@@ -109,7 +109,6 @@ describe("State cases", function(){
 
 				get: {
 					before: function(){
-						// console.log('before get')
 						log.push('bg')
 
 					},
@@ -144,7 +143,7 @@ describe("State cases", function(){
 			}
 		});
 
-		assert.deepEqual(log, ['bi', 'bs', 'b_'])
+		assert.deepEqual(log, ['bi', 'bs', 'b_', 'bg'])
 		assert.equal(target.a, undefined)
 	});
 
@@ -1342,4 +1341,50 @@ describe("State cases", function(){
 		enot.fire(a.target.x, 'z', true, true);
 		assert.equal(i, 2);
 	})
+
+
+
+
+	it("properly keep native properties but handle own callbacks", function(){
+		var i = 0, j = 0;
+		var a = {
+			click: function(){i++}
+		}
+		applyState(a, {
+			click: function(){
+				j++
+			}
+		}, {click: true})
+
+		a.click();
+		assert.equal(i,1)
+
+		enot.fire(a, 'click')
+		assert.equal(j,1)
+	})
+
+	it("transmit plain values", function(){
+		var a = applyState({}, {
+			x:1
+		})
+
+		a.x = 1;
+	})
+
+	it("keep native properties untaught", function(){
+		var fn = function(){}
+		var a = {
+			x: 1,
+			y: fn
+		}
+
+		applyState(a, {
+			x: 2,
+			y: function(){}
+		})
+
+		assert.equal(a.x, 1)
+		assert.equal(a.y, fn)
+	})
+
 })
