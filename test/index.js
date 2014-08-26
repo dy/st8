@@ -5,7 +5,7 @@ if (typeof global.Event === 'undefined') global.Event = function(){};
 
 var assert = require('chai').assert;
 var enot = require('enot');
-var applyState = require('../index');
+var applyState = require('st8');
 
 
 
@@ -143,7 +143,7 @@ describe("State cases", function(){
 			}
 		});
 
-		assert.deepEqual(log, ['bi', 'bs', 'b_', 'bg'])
+		assert.deepEqual(log, ['bi', 'bs', 'b_'])
 		assert.equal(target.a, undefined)
 	});
 
@@ -420,6 +420,7 @@ describe("State cases", function(){
 
 		assert.equal(i, 1)
 		assert.equal(y, 0)
+		// console.log('------ fire a')
 		enot.fire(a, "a")
 		assert.equal(i, 2)
 		// console.log("------ v = 1")
@@ -1385,6 +1386,40 @@ describe("State cases", function(){
 
 		assert.equal(a.x, 1)
 		assert.equal(a.y, fn)
+	})
+
+	it("self reference redirects", function(){
+		var i = 0;
+		var a = applyState({}, {
+			$a: {
+				init: function(){
+					return {};
+				}
+			},
+
+			x: {
+				_:{
+					'@$a click, click': 'inc'
+				}
+			},
+
+			// API
+			y: {
+				_: {
+					inc: function(){
+						i++
+					}
+				}
+			}
+
+		}, {click: true});
+
+		enot.fire(a.$a, 'click')
+		assert.equal(i, 1)
+
+		// console.log('----fire click')
+		enot.fire(a, 'click')
+		assert.equal(i, 2)
 	})
 
 })

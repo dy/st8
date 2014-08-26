@@ -36,7 +36,11 @@ var depsCache = new WeakMap;
 //map of callbacks active on target
 var activeCallbacks = new WeakMap;
 
+//set of native properties per target
 var ignoreCache = new WeakMap;
+
+//set of target prop setters
+var settersCache = new WeakMap;
 
 
 //apply state to a target
@@ -47,6 +51,7 @@ function applyState(target, props, ignoreProps){
 	if (!statesCache.has(target)) statesCache.set(target, {});
 	if (!activeCallbacks.has(target)) activeCallbacks.set(target, {});
 	if (!ignoreCache.has(target)) ignoreCache.set(target, ignoreProps || {});
+	if (!settersCache.has(target)) settersCache.set(target, {});
 
 	flattenKeys(props, true);
 
@@ -68,8 +73,12 @@ function applyState(target, props, ignoreProps){
 					if (isStateTransitionName(innerPropName) || innerPropName === propName) continue;
 
 					var innerProp = innerProps[innerPropName];
+
 					//save parent prop as a dependency for inner prop
 					(deps[innerPropName] = deps[innerPropName] || {})[propName] = true;
+
+					//save stringy inner prop as a dependece for the prop
+					if (isString(innerProp)) (deps[propName] = deps[propName] || {})[innerProp] = true;
 
 					//stub property on target with proper type (avoid uninited calls of inner methods)
 					if (!has(target, innerPropName) && !has(props, innerPropName)) {
@@ -86,6 +95,7 @@ function applyState(target, props, ignoreProps){
 
 	//init values
 	for (var propName in deps){
+		// console.log('default init', propName);
 		initProp(target, propName);
 	}
 
@@ -111,28 +121,26 @@ function createProps(target, props){
 	for (var name in deps) {
 		var prop = props[name];
 
-		//handle specific ignore case
-		if (ignoreProps[name]) {
-			//handle listener
-			if (isFn(prop))	eOn(target, name, props[name])
-			deps[name] = null;
-			continue;
-		}
-
 		//set initial property states as prototypes
 		statesCache.get(target)[name] = Object.create(isObject(prop) ? prop : null);
+
+		//set initialization lock in order to detect first set call
+		lock(target, initCallbackName + name);
+
+		//create fake setters for ignorable props
+		if (ignoreProps[name]) {
+			createSetter(target, name);
+			continue;
+		}
 
 		//save initial value
 		if (has(target, name)) {
 			valuesCache.get(target)[name] = target[name];
 		}
 
-		//set initialization lock in order to detect first set call
-		lock(target, initCallbackName + name);
-
 		//set accessors for all props, not the object ones only: some plain property may be dependent on other property’s state, so it has to be intercepted in getter and the stateful property inited beforehead
 		Object.defineProperty(target, name, {
-			get: (function(name, target){
+			get: (function(target, name){
 				return function(){
 					// console.group('get ', name)
 					var propState = statesCache.get(target)[name];
@@ -148,132 +156,162 @@ function createProps(target, props){
 					// console.groupEnd();
 					return value;
 				}
-			})(name, target),
-			set: (function(name, target){
-				return function(value){
-					// console.log('set', name, value)
-					var propState = statesCache.get(target)[name];
-					var targetValues = valuesCache.get(target);
-
-					//init, if is not
-					initProp(target, name);
-
-					var oldValue = targetValues[name];
-
-					//1. apply setter to value
-					var setResult = callState(target, propState[setterName], value, oldValue);
-					if (setResult !== undefined) value = setResult;
-
-					//FIXME: catch initial call better way
-					//ignore leaving absent initial state
-					if (!unlock(target, initCallbackName + name)) {
-						//Ignore not changed value
-						if (value === oldValue) return;
-
-						//leaving an old state unbinds all events of the old state
-						var oldState = has(propState, oldValue) ? propState[oldValue] : propState[remainderStateName];
-
-						if (!lock(target, leaveCallbackName + oldState)) {
-							//try to enter new state (if redirect happens)
-							var leaveResult = leaveState(target, oldState, value, oldValue);
-
-							//redirect mod, if returned any but self
-							if (leaveResult !== undefined && leaveResult !== value) {
-								//ignore entering falsy state
-								if (leaveResult === false) {
-								}
-								//enter new result
-								else {
-									target[name] = leaveResult;
-								}
-
-								return unlock(target, leaveCallbackName + oldState);
-							}
-
-							unlock(target, leaveCallbackName + oldState);
-
-							//ignore redirect
-							if (targetValues[name] !== oldValue) {
-								return;
-							}
-
-							unapplyProps(target, oldState);
-						}
-
-					}
-
-					//save new self value
-					targetValues[name] = value;
-					var newStateName = has(propState, value) ? value : remainderStateName;
-
-					if (!lock(target, name + newStateName)) {
-						//new state applies new props: binds events, sets values
-						var newState = propState[newStateName];
-						applyProps(target, newState);
-
-						//try to enter new state (if redirect happens)
-						var enterResult = callState(target, newState, value, oldValue);
-
-						//redirect mod, if returned any but self
-						if (enterResult !== undefined && enterResult !== value) {
-							//ignore entering falsy state
-							if (enterResult === false) {
-								target[name] = oldValue;
-							}
-							//enter new result
-							else {
-								target[name] = enterResult;
-							}
-
-							return unlock(target, name + newStateName);
-						}
-
-						unlock(target, name + newStateName);
-					}
-
-
-					//4. call changed
-					if (value !== oldValue)
-						callState(target, propState[changedCallbackName], value, oldValue)
-
-					// console.groupEnd()
-				}
-			})(name, target)
+			})(target, name),
+			set: createSetter(target, name)
 		});
 	};
 }
 
+
+
+//create & save setter on target
+function createSetter(target, name){
+	var setter = function(value){
+		// console.group('set', name, value)
+		var propState = statesCache.get(target)[name];
+		var targetValues = valuesCache.get(target);
+
+		//init, if is not
+		initProp(target, name);
+		var oldValue = targetValues[name];
+
+		//1. apply setter to value
+		var setResult = callState(target, propState[setterName], value, oldValue);
+		if (setResult !== undefined) value = setResult;
+
+		//FIXME: catch initial call better way
+		//ignore leaving absent initial state
+		if (!unlock(target, initCallbackName + name)) {
+			//Ignore not changed value
+			if (value === oldValue) {
+				// console.groupEnd()
+				return;
+			}
+
+			//leaving an old state unbinds all events of the old state
+			var oldState = has(propState, oldValue) ? propState[oldValue] : propState[remainderStateName];
+
+			if (!lock(target, leaveCallbackName + oldState)) {
+				//try to enter new state (if redirect happens)
+				var leaveResult = leaveState(target, oldState, value, oldValue);
+
+				//redirect mod, if returned any but self
+				if (leaveResult !== undefined && leaveResult !== value) {
+					//ignore entering falsy state
+					if (leaveResult === false) {
+					}
+					//enter new result
+					else {
+						target[name] = leaveResult;
+					}
+
+					// console.groupEnd()
+					return unlock(target, leaveCallbackName + oldState);
+				}
+
+				unlock(target, leaveCallbackName + oldState);
+
+				//ignore redirect
+				if (targetValues[name] !== oldValue) {
+					// console.groupEnd()
+					return;
+				}
+
+				unapplyProps(target, oldState);
+			}
+
+		}
+
+		//save new self value
+		// targetValues[name] = value;
+		applyValue(target, name, value)
+		// console.log('set succeeded', name, value)
+		var newStateName = has(propState, value) ? value : remainderStateName;
+		if (!lock(target, name + newStateName)) {
+			//new state applies new props: binds events, sets values
+			var newState = propState[newStateName];
+
+			applyProps(target, newState);
+
+			//try to enter new state (if redirect happens)
+			var enterResult = callState(target, newState, value, oldValue);
+
+			//redirect mod, if returned any but self
+			if (enterResult !== undefined && enterResult !== value) {
+				//ignore entering falsy state
+				if (enterResult === false) {
+					target[name] = oldValue;
+				}
+				//enter new result
+				else {
+					target[name] = enterResult;
+				}
+
+				// console.groupEnd()
+				return unlock(target, name + newStateName);
+			}
+
+			unlock(target, name + newStateName);
+		}
+
+
+		//4. call changed
+		if (value !== oldValue)
+			callState(target, propState[changedCallbackName], value, oldValue)
+
+		// console.groupEnd()
+	}
+
+	//save setter
+	settersCache.get(target)[name] = setter;
+
+	return setter;
+}
+
+
+
 //property initializer
 function initProp(target, name){
 	var deps = depsCache.get(target);
-	if(!deps[name]) return;
-
-	// console.log('init', name, 'dependent on', deps[name]);
+	if (!deps[name]) return;
 
 	var propState = statesCache.get(target)[name];
 	var initValues = valuesCache.get(target);
+	// console.log('init', name, 'dependent on', deps[name]);
+
+	//mark dependency as resolved (ignore next init calls)
+	var propDeps = deps[name];
+	deps[name] = null;
 
 	//init dependens things beforehead
-	for (var depPropName in deps[name]){
-		if (deps[name][depPropName]) {
+	for (var depPropName in propDeps){
+		if (propDeps[depPropName]) {
 			// console.log('redirect init to', depPropName)
 			initProp(target, depPropName);
 		}
 	}
 
-	//mark dependency as resolved (ignore next init calls)
-	deps[name] = null;
 
 	//call init with target initial value stored in targetValues
 	var initResult = callState(target, propState[initCallbackName], initValues[name]);
-	applyValue(target, name, initResult);
+
+	// applyValue(target, name, initResult);
+
+	var isIgnored = ignoreCache.get(target)[name];
+	if (!isIgnored)	{
+		target[name] = initResult;
+	} else {
+		//call fake ignored setter
+		settersCache.get(target)[name](initResult);
+	}
 }
 
 
 //set value on target
 function applyValue(target, name, value){
-	target[name] = value;
+	valuesCache.get(target)[name] = value;
 
+	// console.log('assign', name, value)
 	//make sure context is kept bound to the target
 	if (isFn(value)) {
 		value = value.bind(target);
@@ -290,8 +328,7 @@ function applyProps(target, props){
 	if (!props) return;
 
 	for (var name in props){
-
-		// console.log('bind', name)
+		// console.group('apply prop', name)
 		if (isStateTransitionName(name)) continue;
 
 		var value = props[name];
@@ -305,8 +342,15 @@ function applyProps(target, props){
 		}
 
 		else {
-			applyValue(target, name, value)
+			//FIXME: merge with the same condition in init
+			if (!ignoreCache.get(target)[name])	{
+				target[name] = value;
+			} else {
+				//call fake ignored setter
+				settersCache.get(target)[name](value);
+			}
 		}
+		// console.groupEnd();
 	}
 }
 
@@ -439,4 +483,11 @@ function flattenKeys(set, deep){
 	}
 
 	return set;
+}
+
+
+
+//make sure there’re no references to the target, so there’re no memory leaks
+function unapplyState(target, props){
+	//TODO
 }
