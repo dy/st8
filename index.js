@@ -46,8 +46,9 @@ var settersCache = new WeakMap;
 //apply state to a target
 //native properties sohuld be passed as a blacklist
 function applyState(target, props, ignoreProps){
+	// console.log('applyState', props)
+
 	//create target private storage
-	if (!valuesCache.has(target)) valuesCache.set(target, {});
 	if (!statesCache.has(target)) statesCache.set(target, {});
 	if (!activeCallbacks.has(target)) activeCallbacks.set(target, {});
 	if (!ignoreCache.has(target)) ignoreCache.set(target, ignoreProps || {});
@@ -60,6 +61,8 @@ function applyState(target, props, ignoreProps){
 	depsCache.set(target, deps);
 
 	for (var propName in props){
+		if (has(Object, propName)) continue;
+
 		deps[propName] = deps[propName] || {};
 
 		var prop = props[propName];
@@ -116,7 +119,14 @@ function createProps(target, props){
 			initialValues[propName] = props[propName];
 		}
 	}
-	valuesCache.set(target, Object.create(initialValues));
+	if (!valuesCache.has(target)) {
+		valuesCache.set(target, Object.create(initialValues));
+	} else {
+		var valuesProto = valuesCache.get(target);
+		for (var protoName in initialValues){
+			valuesProto[propName] = initialValues[protoName];
+		}
+	}
 
 	for (var name in deps) {
 		var prop = props[name];
@@ -140,6 +150,7 @@ function createProps(target, props){
 
 		//set accessors for all props, not the object ones only: some plain property may be dependent on other property’s state, so it has to be intercepted in getter and the stateful property inited beforehead
 		Object.defineProperty(target, name, {
+			configurable: true,
 			get: (function(target, name){
 				return function(){
 					// console.group('get ', name)
@@ -168,6 +179,7 @@ function createProps(target, props){
 function createSetter(target, name){
 	var setter = function(value){
 		// console.group('set', name, value)
+		// console.log('set', name, value)
 		var propState = statesCache.get(target)[name];
 		var targetValues = valuesCache.get(target);
 
@@ -176,8 +188,23 @@ function createSetter(target, name){
 		var oldValue = targetValues[name];
 
 		//1. apply setter to value
-		var setResult = callState(target, propState[setterName], value, oldValue);
-		if (setResult !== undefined) value = setResult;
+		var setResult;
+		if (!lock(target, setterName + name + value)) {
+			// console.log('set', name, value)
+			setResult = callState(target, propState[setterName], value, oldValue);
+
+			unlock(target, setterName + name + value)
+			if (setResult !== undefined) value = setResult;
+
+			else {
+				//redirect in set
+				if (targetValues[name] !== oldValue) {
+					// console.groupEnd();
+					return;
+				}
+			}
+
+		}
 
 		//FIXME: catch initial call better way
 		//ignore leaving absent initial state
@@ -226,6 +253,7 @@ function createSetter(target, name){
 		// targetValues[name] = value;
 		applyValue(target, name, value)
 		// console.log('set succeeded', name, value)
+
 		var newStateName = has(propState, value) ? value : remainderStateName;
 		if (!lock(target, name + newStateName)) {
 			//new state applies new props: binds events, sets values
@@ -276,7 +304,7 @@ function initProp(target, name){
 	if (!deps[name]) return;
 
 	var propState = statesCache.get(target)[name];
-	var initValues = valuesCache.get(target);
+	var targetValues = valuesCache.get(target);
 	// console.log('init', name, 'dependent on', deps[name]);
 
 	//mark dependency as resolved (ignore next init calls)
@@ -291,11 +319,20 @@ function initProp(target, name){
 		}
 	}
 
+	//handle init procedure
+	var initResult, beforeInit = targetValues[name];
+	if (isFn(propState[initCallbackName])) {
+		initResult = propState[initCallbackName].call(target, targetValues[name]);
 
-	//call init with target initial value stored in targetValues
-	var initResult = callState(target, propState[initCallbackName], initValues[name]);
+		//if result is undefined - keep initial value
+		if (initResult === undefined) initResult = targetValues[name];
+	}
+	else {
+		initResult = targetValues[name] !== undefined ? targetValues[name] : propState[initCallbackName];
+	}
 
-	// applyValue(target, name, initResult);
+	//handle init redirect
+	if (targetValues[name] !== beforeInit) return;
 
 	var isIgnored = ignoreCache.get(target)[name];
 	if (!isIgnored)	{
@@ -401,6 +438,7 @@ function callState(target, state, a1, a2) {
 
 	//init: 123
 	else if (isPlain(state)) {
+		//FIXME: this guy is questionable (return state)
 		return state;
 	}
 

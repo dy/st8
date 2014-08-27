@@ -1422,4 +1422,28 @@ describe("State cases", function(){
 		assert.equal(i, 2)
 	})
 
+
+	it("properly init state values", function(){
+		var A = Mod({
+			a: {
+				init: "a",
+
+				a: function(){
+
+				},
+				b: function(){
+
+				}
+			}
+		})
+
+		var a = new A({
+			a: "b"
+		})
+
+		assert.equal(a.a, "b")
+	})
+
+	it("init within init")
+
 })
