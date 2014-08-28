@@ -9,6 +9,7 @@ var isObject = _['isObject'];
 var has = _['has'];
 var isFn = _['isFn'];
 var isPlain = _['isPlain'];
+var isString = _['isString'];
 
 var eOn = enot['on'];
 var eOff = enot['off'];
