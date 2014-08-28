@@ -15,6 +15,7 @@ var eOff = enot['off'];
 
 
 //tech names
+var createdCallbackName = 'created';
 var enterCallbackName = 'before';
 var leaveCallbackName = 'after';
 var initCallbackName = 'init';
@@ -61,7 +62,14 @@ function applyState(target, props, ignoreProps){
 	depsCache.set(target, deps);
 
 	for (var propName in props){
+		//ignore native props
 		if (has(Object, propName)) continue;
+
+		//ignore lc props
+		//FIXME: maybe it’s better to pass them externally
+		if (propName === createdCallbackName || propName === initCallbackName){
+			continue;
+		}
 
 		deps[propName] = deps[propName] || {};
 
@@ -87,6 +95,7 @@ function applyState(target, props, ignoreProps){
 					if (!has(target, innerPropName) && !has(props, innerPropName)) {
 						if (isFn(innerProp)) target[innerPropName] = noop;
 					}
+
 				}
 			}
 		}
@@ -127,6 +136,7 @@ function createProps(target, props){
 			valuesProto[propName] = initialValues[propName];
 		}
 	}
+
 
 	for (var name in deps) {
 		var prop = props[name];
@@ -326,6 +336,7 @@ function initProp(target, name){
 	if (!deps[name]) return;
 
 	var propState = statesCache.get(target)[name];
+
 	var targetValues = valuesCache.get(target);
 	// console.log('init', name, 'dependent on', deps[name]);
 
