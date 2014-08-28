@@ -123,8 +123,8 @@ function createProps(target, props){
 		valuesCache.set(target, Object.create(initialValues));
 	} else {
 		var valuesProto = valuesCache.get(target);
-		for (var protoName in initialValues){
-			valuesProto[propName] = initialValues[protoName];
+		for (var propName in initialValues){
+			valuesProto[propName] = initialValues[propName];
 		}
 	}
 
@@ -144,7 +144,7 @@ function createProps(target, props){
 		}
 
 		//save initial value
-		if (has(target, name)) {
+		if (has(target, name)/* && !has(valuesCache.get(target),name)*/) {
 			valuesCache.get(target)[name] = target[name];
 		}
 
@@ -343,6 +343,7 @@ function initProp(target, name){
 
 	//handle init procedure
 	var initResult, beforeInit = targetValues[name];
+
 	if (isFn(propState[initCallbackName])) {
 		initResult = propState[initCallbackName].call(target, targetValues[name]);
 
