@@ -155,14 +155,15 @@ function createProps(target, props){
 				return function(){
 					// console.group('get ', name)
 					var propState = statesCache.get(target)[name];
-					var value = valuesCache.get(target)[name];
+					var values = valuesCache.get(target);
+					var value = values[name];
 
 					//init, if is not
 					initProp(target, name);
 
 					//getting prop value just returns it’s real value
 					var getResult = callState(target, propState[getterName], value);
-					if (getResult !== undefined) value = getResult;
+					value = getResult === undefined ? values[name] : getResult;
 
 					// console.groupEnd();
 					return value;
@@ -176,6 +177,7 @@ function createProps(target, props){
 
 
 //create & save setter on target
+var inSetValues = new WeakMap;
 function createSetter(target, name){
 	var setter = function(value){
 		// console.group('set', name, value)
@@ -189,21 +191,41 @@ function createSetter(target, name){
 
 		//1. apply setter to value
 		var setResult;
-		if (!lock(target, setterName + name + value)) {
-			// console.log('set', name, value)
-			setResult = callState(target, propState[setterName], value, oldValue);
 
-			unlock(target, setterName + name + value)
-			if (setResult !== undefined) value = setResult;
+		if (!lock(target, setterName + name)) {
+			if (!lock(target, setterName + name + value)) {
+				// console.log('set', name, value)
 
-			else {
-				//redirect in set
-				if (targetValues[name] !== oldValue) {
-					// console.groupEnd();
-					return;
+				try {
+					setResult = callState(target, propState[setterName], value, oldValue);
+				} catch (e){
+					throw e;
 				}
-			}
 
+				unlock(target, setterName + name + value);
+				unlock(target, setterName + name);
+
+				//self.value could've changed here because of inner set calls
+				if (inSetValues.has(target)) {
+					setResult = inSetValues.get(target);
+					// console.log('redirected value', setResult)
+					inSetValues.delete(target);
+				}
+
+				if (setResult !== undefined) value = setResult;
+
+				else {
+					//redirect in set
+					if (targetValues[name] !== oldValue) {
+						// console.groupEnd();
+						return;
+					}
+				}
+
+			}
+		}
+		else {
+			inSetValues.set(target, value);
 		}
 
 		//FIXME: catch initial call better way
