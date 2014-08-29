@@ -107,7 +107,7 @@ function applyState(target, props, ignoreProps){
 
 
 	//init values
-	for (var propName in deps){
+	for (propName in deps){
 		// console.log('default init', propName);
 		initProp(target, propName);
 	}
@@ -178,17 +178,18 @@ function createProps(target, props){
 
 					// console.groupEnd();
 					return value;
-				}
+				};
 			})(target, name),
+
 			set: createSetter(target, name)
 		});
-	};
+	}
 }
 
 
 
 //create & save setter on target
-var inSetValues = new WeakMap;
+var inSetValues = new WeakMap();
 function createSetter(target, name){
 	var setter = function(value){
 		// console.group('set', name, value)
@@ -318,10 +319,10 @@ function createSetter(target, name){
 
 		//4. call changed
 		if (value !== oldValue)
-			callState(target, propState[changedCallbackName], value, oldValue)
+			callState(target, propState[changedCallbackName], value, oldValue);
 
 		// console.groupEnd()
-	}
+	};
 
 	//save setter
 	settersCache.get(target)[name] = setter;
@@ -362,13 +363,13 @@ function initProp(target, name){
 	}
 	else if (isObject(propState[initCallbackName]) && has(propState[initCallbackName],enterCallbackName)) {
 		initResult = callState(target, propState[initCallbackName], beforeInit);
-
-		//if result is undefined - keep initial value
-		if (initResult === undefined) initResult = beforeInit;
 	}
 	else {
 		initResult = beforeInit !== undefined ? beforeInit : propState[initCallbackName];
 	}
+
+	//if result is undefined - keep initial value
+	if (initResult === undefined) initResult = beforeInit;
 
 	//handle init redirect
 	if (targetValues[name] !== beforeInit) return;
