@@ -27,22 +27,22 @@ var remainderStateName = '_';
 
 
 //values keyed by target
-var valuesCache = new WeakMap;
+var valuesCache = new WeakMap();
 
 //as far properties can change it’s behaviour dynamically, we have to keep real states somewhere
-var statesCache = new WeakMap;
+var statesCache = new WeakMap();
 
 //list of dependencies for the right init order
-var depsCache = new WeakMap;
+var depsCache = new WeakMap();
 
 //map of callbacks active on target
-var activeCallbacks = new WeakMap;
+var activeCallbacks = new WeakMap();
 
 //set of native properties per target
-var ignoreCache = new WeakMap;
+var ignoreCache = new WeakMap();
 
 //set of target prop setters
-var settersCache = new WeakMap;
+var settersCache = new WeakMap();
 
 
 //apply state to a target
@@ -356,14 +356,18 @@ function initProp(target, name){
 	//handle init procedure
 	var initResult, beforeInit = targetValues[name];
 
+	//run initialize procedure
 	if (isFn(propState[initCallbackName])) {
-		initResult = propState[initCallbackName].call(target, targetValues[name]);
+		initResult = propState[initCallbackName].call(target, beforeInit);
+	}
+	else if (isObject(propState[initCallbackName]) && has(propState[initCallbackName],enterCallbackName)) {
+		initResult = callState(target, propState[initCallbackName], beforeInit);
 
 		//if result is undefined - keep initial value
-		if (initResult === undefined) initResult = targetValues[name];
+		if (initResult === undefined) initResult = beforeInit;
 	}
 	else {
-		initResult = targetValues[name] !== undefined ? targetValues[name] : propState[initCallbackName];
+		initResult = beforeInit !== undefined ? beforeInit : propState[initCallbackName];
 	}
 
 	//handle init redirect
@@ -385,17 +389,18 @@ function applyValue(target, name, value){
 
 	//don't bind noop values
 	//FIXME: write test for this (dropdown.js use-case) - there’s still extra-binding or redundant noop
-	if (!isString(value) || !isFn(value) || value === noop) return;
+	if (value === noop) return;
 
-	// console.log('assign', name, value)
-	//make sure context is kept bound to the target
-	if (isFn(value)) {
-		value = value.bind(target);
-		activeCallbacks.get(target)[name] = value;
+	if (isString(value) || isFn(value)) {
+		// console.log('assign', name, value)
+		//make sure context is kept bound to the target
+		if (isFn(value)) {
+			value = value.bind(target);
+			activeCallbacks.get(target)[name] = value;
+		}
+
+		eOn(target, name, value);
 	}
-
-	//NOTE: this causes get call
-	eOn(target, name, value);
 }
 
 
@@ -449,17 +454,19 @@ function unapplyProps(target, props){
 			}
 		}
 
-		else if (isString(propValue) || isFn(propValue)) {
-			//unbind fn value
-			// console.log('off', name)
-			if (isFn(propValue)) {
-				var callbacks = activeCallbacks.get(target);
-				if (callbacks[name]) {
-					propValue = callbacks[name];
-					callbacks[name] = null;
+		else {
+			if (isString(propValue) || isFn(propValue)) {
+				//unbind fn value
+				// console.log('off', name)
+				if (isFn(propValue)) {
+					var callbacks = activeCallbacks.get(target);
+					if (callbacks[name]) {
+						propValue = callbacks[name];
+						callbacks[name] = null;
+					}
 				}
+				eOff(target, name, propValue);
 			}
-			eOff(target, name, propValue);
 
 			//set value to root initial one
 			delete values[name];

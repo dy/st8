@@ -88,6 +88,7 @@ describe("State cases", function(){
 			a: {
 				init: {
 					before: function(){
+						// console.log('bi')
 						log.push('bi')
 					},
 					after: function(){
@@ -98,7 +99,7 @@ describe("State cases", function(){
 				set: {
 					before: function(){
 						log.push('bs')
-
+						// console.log('bs')
 					},
 
 					after: function(){
@@ -110,6 +111,7 @@ describe("State cases", function(){
 				get: {
 					before: function(){
 						log.push('bg')
+						// console.log('bg')
 
 					},
 
@@ -122,6 +124,7 @@ describe("State cases", function(){
 				changed: {
 					before: function(){
 						log.push('bc')
+						// console.log('bc')
 
 					},
 
@@ -134,6 +137,7 @@ describe("State cases", function(){
 				_: {
 					before: function(){
 						log.push('b_')
+						// console.log('b_')
 					},
 
 					after: function(){
@@ -262,8 +266,8 @@ describe("State cases", function(){
 		a.a = 3;
 		assert.equal(state, 3)
 		assert.equal(outState, 2)
-		delete a.a
-		assert.equal(a.a, 3)
+		// delete a.a;
+		// assert.equal(a.a, 3)
 		// console.log('--------a.a = undefined')
 		a.a = undefined;
 		assert.equal(state, undefined)
@@ -361,22 +365,22 @@ describe("State cases", function(){
 
 		assert.equal(v, undefined)
 		// console.log("-----------dispatch e")
-		enot.fire(a, "e");
+		enot.emit(a, "e");
 		assert.equal(v, 1)
 		// console.log('-------a=2')
 		a.a = 2;
 		assert.equal(v, 1)
-		enot.fire(a, "e");
+		enot.emit(a, "e");
 		assert.equal(v, 2)
 		// console.log('-------a=3')
 		a.a = 3;
 		assert.equal(v, 2);
 		// console.log('-------fire e')
-		enot.fire(a, "e");
+		enot.emit(a, "e");
 		assert.equal(v, 3);
 		a.a = 1;
 		assert.equal(v, 3);
-		enot.fire(a, "e");
+		enot.emit(a, "e");
 		assert.equal(v, 1);
 
 	});
@@ -388,11 +392,11 @@ describe("State cases", function(){
 				_: {
 					before: function(){
 						// console.log("_:before", this)
-						enot.fire(this, "a")
+						enot.emit(this, "a")
 					},
 					after: function() {
 						// console.log("_:after")
-						enot.fire(this, "a")
+						enot.emit(this, "a")
 					},
 					a: function() {
 						// console.log("_:a")
@@ -403,11 +407,11 @@ describe("State cases", function(){
 				1: {
 					before: function() {
 						// console.log("1:before")
-						enot.fire(this, "a")
+						enot.emit(this, "a")
 					},
 					after: function() {
 						// console.log("1:after")
-						enot.fire(this, "a")
+						enot.emit(this, "a")
 					},
 					a: 'b'
 				}
@@ -421,7 +425,7 @@ describe("State cases", function(){
 		assert.equal(i, 1)
 		assert.equal(y, 0)
 		// console.log('------ fire a')
-		enot.fire(a, "a")
+		enot.emit(a, "a")
 		assert.equal(i, 2)
 		// console.log("------ v = 1")
 		a.v = 1;
@@ -652,7 +656,7 @@ describe("State cases", function(){
 		})
 
 		a.a = 1;
-		enot.fire(a, "fn")
+		enot.emit(a, "fn")
 		a.a = 2
 		assert.equal(i, 3)
 	})
@@ -778,36 +782,36 @@ describe("State cases", function(){
 		assert.deepEqual(log, [])
 
 		// A.meth();
-		enot.fire(a, "meth")
-		enot.fire(a, "cb")
+		enot.emit(a, "meth")
+		enot.emit(a, "cb")
 		assert.sameMembers(log, ["default", "ex"])
 		log = [];
-		enot.fire(a, "cbAlias")
+		enot.emit(a, "cbAlias")
 		assert.deepEqual(log, ["ex"])
-		enot.fire(a, "cbAlias2")
+		enot.emit(a, "cbAlias2")
 		assert.deepEqual(log, ["ex", "ex"])
 
 		log = [];
 		// console.log("---------a = 2")
 		a.a = 2;
 		// A.meth();
-		enot.fire(a, "meth")
-		enot.fire(a, "cb")
+		enot.emit(a, "meth")
+		enot.emit(a, "cb")
 		assert.sameMembers(log, ["default", "ex", "2", "2cb"])
-		enot.fire(a, "cbAlias")
+		enot.emit(a, "cbAlias")
 		assert.sameMembers(log, ["default", "ex", "2", "2cb"])
-		enot.fire(a, "cbAlias2")
+		enot.emit(a, "cbAlias2")
 		assert.sameMembers(log, ["default", "ex", "2", "2cb", "2cb"])
 
 		log = [];
 		// console.log("------a=1")
 		a.a = 1;
 		a.meth();
-		enot.fire(a, "cb")
+		enot.emit(a, "cb")
 		assert.sameMembers(log, ["default", "ex"])
-		enot.fire(a, "cbAlias")
+		enot.emit(a, "cbAlias")
 		assert.sameMembers(log, ["default", "ex", "ex"])
-		enot.fire(a, "cbAlias2")
+		enot.emit(a, "cbAlias2")
 		assert.sameMembers(log, ["default", "ex", "ex", "ex"])
 	})
 
@@ -1156,38 +1160,38 @@ describe("State cases", function(){
 
 		var z = a.z;
 
-		enot.fire(z, 'click')
-		enot.fire(a, 'click')
+		enot.emit(z, 'click')
+		enot.emit(a, 'click')
 		assert.equal(i, 0)
 		assert.equal(j, 1)
 
 		a.x = 2;
 
-		enot.fire(z, 'click')
-		enot.fire(a, 'click')
+		enot.emit(z, 'click')
+		enot.emit(a, 'click')
 		assert.equal(i, 0)
 		assert.equal(j, 1)
 
 		// console.log('-------- x = 3')
 		a.x = 3;
 
-		enot.fire(z, 'click')
-		enot.fire(a, 'click')
+		enot.emit(z, 'click')
+		enot.emit(a, 'click')
 		assert.equal(i, 1)
 		assert.equal(j, 1)
 
 		// console.log('------- x = 2')
 		a.x = 2;
-		enot.fire(z, 'click')
-		enot.fire(a, 'click')
+		enot.emit(z, 'click')
+		enot.emit(a, 'click')
 		assert.equal(i, 1)
 		assert.equal(j, 1)
 
 		// console.log('------- x = 1')
 		a.x = 1;
 
-		enot.fire(z, 'click')
-		enot.fire(a, 'click')
+		enot.emit(z, 'click')
+		enot.emit(a, 'click')
 		assert.equal(i, 1)
 		assert.equal(j, 2)
 	})
@@ -1233,12 +1237,12 @@ describe("State cases", function(){
 			}
 		});
 
-		enot.fire(a, 'x');
+		enot.emit(a, 'x');
 		assert.sameMembers(log, [1,2])
 
 		// console.log('------- a.a = 2')
 		a.a = 2;
-		enot.fire(a, 'x');
+		enot.emit(a, 'x');
 		assert.sameMembers(log, [1,2,2])
 	})
 
@@ -1254,7 +1258,7 @@ describe("State cases", function(){
 		})
 
 
-		enot.fire(a, "a");
+		enot.emit(a, "a");
 		assert.equal(i, 1);
 
 		// console.log('--------add listener')
@@ -1263,7 +1267,7 @@ describe("State cases", function(){
 			inc //inc
 		);
 
-		enot.fire(a, "a");
+		enot.emit(a, "a");
 		assert.equal(i, 3);
 
 		i = 0;
@@ -1271,7 +1275,7 @@ describe("State cases", function(){
 		// console.log('--------remove listener')
 		enot.off(a, "a", inc)
 
-		enot.fire(a, "a");
+		enot.emit(a, "a");
 		assert.equal(i, 1);
 	})
 
@@ -1331,15 +1335,15 @@ describe("State cases", function(){
 		a.a = 1;
 		// console.log("----a=2")
 		a.a = 2;
-		enot.fire(a.target, 'x');
-		enot.fire(a.target, 'y');
+		enot.emit(a.target, 'x');
+		enot.emit(a.target, 'y');
 		assert.equal(i, 1);
 		// console.log("----a=3")
 		a.a = 3;
 
 
 		// console.log("----dispatch z")
-		enot.fire(a.target.x, 'z', true, true);
+		enot.emit(a.target.x, 'z', true, true);
 		assert.equal(i, 2);
 	})
 
@@ -1360,7 +1364,7 @@ describe("State cases", function(){
 		a.click();
 		assert.equal(i,1)
 
-		enot.fire(a, 'click')
+		enot.emit(a, 'click')
 		assert.equal(j,1)
 	})
 
@@ -1414,11 +1418,11 @@ describe("State cases", function(){
 
 		}, {click: true});
 
-		enot.fire(a.$a, 'click')
+		enot.emit(a.$a, 'click')
 		assert.equal(i, 1)
 
 		// console.log('----fire click')
-		enot.fire(a, 'click')
+		enot.emit(a, 'click')
 		assert.equal(i, 2)
 	})
 
