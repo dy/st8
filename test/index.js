@@ -1528,7 +1528,7 @@ describe("State cases", function(){
 
 				}
 			},
-			// x: 0
+			x: {}
 		});
 
 		// assert.equal(a.x, undefined)

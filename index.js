@@ -485,7 +485,7 @@ function unapplyProps(target, props){
 			}
 
 			//set value to the root initial one, if such
-			if (has(propsCache.get(target), name))
+			if (has(propsCache.get(target), name) && !state.constructor)
 				delete values[name];
 		}
 	}
