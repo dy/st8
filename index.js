@@ -383,6 +383,10 @@ function initProp(target, name){
 function applyValue(target, name, value){
 	valuesCache.get(target)[name] = value;
 
+	//don't bind noop values
+	//FIXME: write test for this (dropdown.js use-case) - there’s still extra-binding or redundant noop
+	if (!isString(value) || !isFn(value) || value === noop) return;
+
 	// console.log('assign', name, value)
 	//make sure context is kept bound to the target
 	if (isFn(value)) {
@@ -445,7 +449,7 @@ function unapplyProps(target, props){
 			}
 		}
 
-		else {
+		else if (isString(propValue) || isFn(propValue)) {
 			//unbind fn value
 			// console.log('off', name)
 			if (isFn(propValue)) {

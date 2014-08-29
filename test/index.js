@@ -5,7 +5,7 @@ if (typeof global.Event === 'undefined') global.Event = function(){};
 
 var assert = require('chai').assert;
 var enot = require('enot');
-var applyState = require('st8');
+var applyState = require('../index');
 
 
 
@@ -1424,7 +1424,7 @@ describe("State cases", function(){
 
 
 	it("properly init state values", function(){
-		var A = Mod({
+		var a = applyState({a: "b"}, {
 			a: {
 				init: "a",
 
@@ -1437,13 +1437,13 @@ describe("State cases", function(){
 			}
 		})
 
-		var a = new A({
-			a: "b"
-		})
-
 		assert.equal(a.a, "b")
 	})
 
 	it("init within init")
+
+	it("double :defer bind @dropdown_case")
+
+	it("ignore bind to non-str or non-fn events")
 
 })
