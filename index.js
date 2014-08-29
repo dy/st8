@@ -32,6 +32,9 @@ var valuesCache = new WeakMap();
 //as far properties can change it’s behaviour dynamically, we have to keep real states somewhere
 var statesCache = new WeakMap();
 
+//set of initial (root) prop values
+var propsCache = new WeakMap();
+
 //list of dependencies for the right init order
 var depsCache = new WeakMap();
 
@@ -55,6 +58,7 @@ function applyState(target, props, ignoreProps){
 	if (!activeCallbacks.has(target)) activeCallbacks.set(target, {});
 	if (!ignoreCache.has(target)) ignoreCache.set(target, ignoreProps || {});
 	if (!settersCache.has(target)) settersCache.set(target, {});
+	if (!propsCache.has(target)) propsCache.set(target, {});
 
 	flattenKeys(props, true);
 
@@ -108,7 +112,6 @@ function applyState(target, props, ignoreProps){
 
 	//init values
 	for (propName in deps){
-		// console.log('default init', propName);
 		initProp(target, propName);
 	}
 
@@ -144,6 +147,9 @@ function createProps(target, props){
 
 		//set initial property states as prototypes
 		statesCache.get(target)[name] = Object.create(isObject(prop) ? prop : null);
+
+		//save initial property
+		if (has(props, name)) propsCache.get(target)[name] = prop;
 
 		//set initialization lock in order to detect first set call
 		lock(target, initCallbackName + name);
@@ -392,6 +398,10 @@ function applyValue(target, name, value){
 	//FIXME: write test for this (dropdown.js use-case) - there’s still extra-binding or redundant noop
 	if (value === noop) return;
 
+	bindValue(target, name, value);
+}
+
+function bindValue(target, name, value){
 	if (isString(value) || isFn(value)) {
 		// console.log('assign', name, value)
 		//make sure context is kept bound to the target
@@ -419,11 +429,16 @@ function applyProps(target, props){
 		//extendify descriptor value
 		if (isObject(value)){
 			for (var propName in value){
-				state[propName] = value[propName]
+				state[propName] = value[propName];
 			}
 		}
 
 		else {
+			//if some fn was unbound but is going to be rebind
+			if (value === valuesCache.get(target)[name]){
+				bindValue(target, name, value);
+			}
+
 			//FIXME: merge with the same condition in init
 			if (!ignoreCache.get(target)[name])	{
 				target[name] = value;
@@ -451,7 +466,7 @@ function unapplyProps(target, props){
 		//delete extended descriptor
 		if (isObject(propValue)){
 			for (var propName in propValue){
-				delete state[propName]
+				delete state[propName];
 			}
 		}
 
@@ -469,8 +484,9 @@ function unapplyProps(target, props){
 				eOff(target, name, propValue);
 			}
 
-			//set value to root initial one
-			delete values[name];
+			//set value to the root initial one, if such
+			if (has(propsCache.get(target), name))
+				delete values[name];
 		}
 	}
 }
@@ -506,7 +522,7 @@ function callState(target, state, a1, a2) {
 	}
 
 	//init: document.createElement('div')
-	return state
+	return state;
 }
 
 
@@ -532,7 +548,7 @@ function isStateTransitionName(name){
 }
 
 //lock helpers
-var lockCache = new WeakMap;
+var lockCache = new WeakMap();
 function lock(target, name){
 	if (!lockCache.get(target)) lockCache.set(target, {});
 	if (lockCache.get(target)[name]) return true;
@@ -561,10 +577,12 @@ function flattenKeys(set, deep){
 		if (/,/.test(keys)){
 			delete set[keys];
 
-			eachCSV(keys, function(key){
-				set[key] = value;
-			});
+			eachCSV(keys, setKey);
 		}
+	}
+
+	function setKey(key){
+		set[key] = value;
 	}
 
 	return set;

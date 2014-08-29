@@ -15,10 +15,10 @@ describe("State cases", function(){
 		var target = applyState({}, {
 			a: {
 				init: function(){
-					return 1
+					return 1;
 				},
 				changed: function(v){
-					assert.equal(v, 2)
+					assert.equal(v, 2);
 				}
 			},
 
@@ -27,7 +27,7 @@ describe("State cases", function(){
 					a: {
 						set: function(v){
 							// console.log('set called')
-							assert.equal(v,1)
+							assert.equal(v,1);
 							return 2;
 						}
 					}
@@ -965,6 +965,7 @@ describe("State cases", function(){
 		// console.dir(A)
 
 		assert.equal(a.x, 2)
+
 		// console.log("----v = 2")
 		a.v = 2;
 		assert.equal(a.x, 1)
@@ -976,7 +977,7 @@ describe("State cases", function(){
 		// console.log("----v = 4")
 		a.v = 4;
 		assert.equal(a.x, 2)
-		assert.equal(a.a, undefined)
+		assert.equal(a.a, 3)
 	})
 
 
@@ -1165,6 +1166,7 @@ describe("State cases", function(){
 		assert.equal(i, 0)
 		assert.equal(j, 1)
 
+		// console.log('-------- x = 2')
 		a.x = 2;
 
 		enot.emit(z, 'click')
@@ -1444,10 +1446,103 @@ describe("State cases", function(){
 		assert.equal(a.a, "b")
 	})
 
-	it("init within init")
+	it("init within init", function(){
+		var a = applyState({}, {
+			x: {
+				init: function(){
+					this.x = 1;
+				}
+			}
+		});
 
-	it("double :defer bind @dropdown_case")
+		assert.equal(a.x, 1);
+	});
 
-	it("ignore bind to non-str or non-fn events")
+	it("double :defer bind @dropdown_case (check for noop)")
 
+	it("ignore bind to non-str or non-fn events", function(){
+		var i = 0;
+		var a = applyState({}, {
+			x: false,
+			false: function(){i++}
+		});
+
+		enot.emit(a, 'x')
+		assert.equal(i, 0);
+	})
+
+	it("init event self references beforehead", function(){
+		//TODO: try to catch that
+		var i = 0;
+		var a = applyState({},{
+			s: {
+				init: 1,
+				1: {
+					'@z x': function(){
+						i++
+					}
+				}
+			},
+			q: {
+				init: 1,
+				1: {
+					z: function(){return {}}
+				}
+			}
+		})
+
+		enot.emit(a.z, 'x');
+		assert.equal(i,1);
+	})
+
+	it("init variable from within state", function(){
+		var a = applyState({}, {
+			s: {
+				_: {
+				},
+				1: {
+					a:1
+				},
+				2: {
+
+				}
+			}
+		});
+
+		assert.equal(a.a, undefined)
+
+		a.s = 1;
+		assert.equal(a.a, 1)
+
+		a.s = 2;
+		assert.equal(a.a, 1)
+	});
+
+	it("switching state shouldn’t erase value", function(){
+		var a = applyState({}, {
+			a: {
+				1: {
+					x: 1
+				},
+				2: {
+
+				}
+			},
+			// x: 0
+		});
+
+		// assert.equal(a.x, undefined)
+
+		a.a = 1;
+		assert.equal(a.x, 1)
+
+		a.a = 2;
+		assert.equal(a.x, 1)
+
+		a.a = 1;
+		assert.equal(a.x, 1)
+
+		a.a = 0;
+		assert.equal(a.x, 1)
+	})
 })
