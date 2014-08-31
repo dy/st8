@@ -1,4 +1,4 @@
-var enot = require('enot');
+var enot = require('enot/index.min');
 var _ = require('mutypes');
 var eachCSV = require('each-csv');
 
