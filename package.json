@@ -18,7 +18,7 @@
     "build": "npm run min-index && browserify index.min.js --standalone st8 > dist/st8.js && npm run minify && npm test",
     "test": "mocha --harmony",
     "minify": "ccjs dist/st8.js --compilation_level=SIMPLE --language_in=ECMASCRIPT5_STRICT > dist/st8.min.js",
-    "min-index": "ccjs index.js --language_in=ECMASCRIPT5_STRICT --compilation_level=ADVANCED --formatting=PRETTY_PRINT > index.min.js"
+    "min-index": "ccjs index.js --language_in=ECMASCRIPT5_STRICT --compilation_level=ADVANCED > index.min.js"
   },
   "repository": {
     "type": "git",
