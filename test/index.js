@@ -5,7 +5,7 @@ if (typeof global.Event === 'undefined') global.Event = function(){};
 
 var assert = require('chai').assert;
 var enot = require('enot');
-var applyState = require('st8');
+var applyState = require('../index');
 
 
 

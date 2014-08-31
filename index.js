@@ -126,18 +126,24 @@ function createProps(target, props){
 	var ignoreProps = ignoreCache.get(target);
 
 	//create prototypal values
-	var initialValues = {}, initialStates = {};
+	var protoValues = {}, initialStates = {};
 	for (var propName in deps){
+		//set proto value - property value, if it is not descriptor
 		if (!isObject(props[propName])){
-			initialValues[propName] = props[propName];
+			protoValues[propName] = props[propName];
 		}
 	}
+
+	//if new values - set prototypes
 	if (!valuesCache.has(target)) {
-		valuesCache.set(target, Object.create(initialValues));
-	} else {
-		var valuesProto = valuesCache.get(target);
-		for (var propName in initialValues){
-			valuesProto[propName] = initialValues[propName];
+		valuesCache.set(target, Object.create(protoValues));
+	}
+
+	//if existing values - just set new values
+	else {
+		var values = valuesCache.get(target);
+		for (propName in protoValues){
+			values[propName] = protoValues[propName];
 		}
 	}
 
@@ -246,9 +252,9 @@ function createSetter(target, name){
 			inSetValues.set(target, value);
 		}
 
-		//FIXME: catch initial call better way
 		//ignore leaving absent initial state
-		if (!unlock(target, initCallbackName + name)) {
+		var initLock = unlock(target, initCallbackName + name);
+		if (!initLock) {
 			//Ignore not changed value
 			if (value === oldValue) {
 				// console.groupEnd()
@@ -324,7 +330,7 @@ function createSetter(target, name){
 
 
 		//4. call changed
-		if (value !== oldValue)
+		if (value !== oldValue || (initLock && value !== undefined))
 			callState(target, propState[changedCallbackName], value, oldValue);
 
 		// console.groupEnd()
@@ -363,6 +369,7 @@ function initProp(target, name){
 	//handle init procedure
 	var initResult, beforeInit = targetValues[name];
 
+
 	//run initialize procedure
 	if (isFn(propState[initCallbackName])) {
 		initResult = propState[initCallbackName].call(target, beforeInit);
@@ -379,7 +386,6 @@ function initProp(target, name){
 
 	//handle init redirect
 	if (targetValues[name] !== beforeInit) return;
-
 	var isIgnored = ignoreCache.get(target)[name];
 	if (!isIgnored)	{
 		target[name] = initResult;
