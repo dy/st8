@@ -132,18 +132,26 @@ function createProps(target, props){
 		if (!isObject(props[propName])){
 			protoValues[propName] = props[propName];
 		}
+
+		//save initial property
+		if (has(props, propName)) propsCache.get(target)[propName] = prop;
 	}
+
 
 	//if new values - set prototypes
 	if (!valuesCache.has(target)) {
 		valuesCache.set(target, Object.create(protoValues));
 	}
 
-	//if existing values - just set new values
+	//if existing values - just set new values, appending new prototypes
 	else {
 		var values = valuesCache.get(target);
+
+		//append new value to the prototypes
 		for (propName in protoValues){
-			values[propName] = protoValues[propName];
+			//FIXME: get proto in a more relizable way
+			var valuesProto = values.__proto__;
+			if (!has(valuesProto, propName)) valuesProto[propName] = protoValues[propName];
 		}
 	}
 
@@ -154,8 +162,6 @@ function createProps(target, props){
 		//set initial property states as prototypes
 		statesCache.get(target)[name] = Object.create(isObject(prop) ? prop : null);
 
-		//save initial property
-		if (has(props, name)) propsCache.get(target)[name] = prop;
 
 		//set initialization lock in order to detect first set call
 		lock(target, initCallbackName + name);

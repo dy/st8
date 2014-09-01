@@ -1,7 +1,7 @@
 //stub element
-if (typeof global.Element === 'undefined') global.Element = function(){};
-if (typeof global.HTMLElement === 'undefined') global.HTMLElement = function(){};
-if (typeof global.Event === 'undefined') global.Event = function(){};
+if (typeof Element === 'undefined') global.Element = function(){};
+if (typeof HTMLElement === 'undefined') global.HTMLElement = function(){};
+if (typeof Event === 'undefined') global.Event = function(){};
 
 var assert = require('chai').assert;
 var enot = require('enot');
@@ -1544,5 +1544,15 @@ describe("State cases", function(){
 
 		a.a = 0;
 		assert.equal(a.x, 1)
+	});
+
+	it("should try to keep initial values untouched even in secondary run", function(){
+		var a = applyState({x: 'abc'}, {
+			x: 'def'
+		});
+		applyState(a, {x: 'def', y: 1})
+
+		assert.equal(a.x, 'abc')
+		assert.equal(a.y, 1)
 	})
 })

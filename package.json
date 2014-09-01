@@ -4,7 +4,6 @@
   "description": "Control state of any object",
   "main": "index.js",
   "dependencies": {
-    "polymer-weakmap": "*",
     "enot": "*",
     "mutypes": "*",
     "each-csv": "*"
@@ -15,9 +14,8 @@
     "require-stub": "*"
   },
   "scripts": {
-    "build": "npm run min-index && browserify index.min.js --standalone st8 > dist/st8.js && npm run minify && npm test",
+    "build": "npm run min-index && npm test",
     "test": "mocha --harmony",
-    "minify": "ccjs dist/st8.js --compilation_level=SIMPLE --language_in=ECMASCRIPT5_STRICT > dist/st8.min.js",
     "min-index": "ccjs index.js --language_in=ECMASCRIPT5_STRICT --compilation_level=ADVANCED > index.min.js"
   },
   "repository": {
