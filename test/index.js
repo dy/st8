@@ -1555,4 +1555,20 @@ describe("State cases", function(){
 		assert.equal(a.x, 'abc')
 		assert.equal(a.y, 1)
 	})
+
+	it("flatten keys properly", function(){
+		var a = applyState({}, {
+			a: {
+				set: function(v){
+					return v + 1;
+				}
+			},
+			'a,b': {
+				init: 1
+			}
+		});
+
+		assert.equal(a.a, 2)
+		assert.equal(a.b, 1)
+	})
 })

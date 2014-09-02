@@ -1,8 +1,11 @@
+/** @module  st8 */
+module['exports'] = applyState;
+
+
 var enot = require('enot/index.min');
 var _ = require('mutypes');
 var eachCSV = require('each-csv');
 
-module['exports'] = applyState;
 
 //externs
 var isObject = _['isObject'];
@@ -26,7 +29,7 @@ var getterName = 'get';
 var remainderStateName = '_';
 
 
-//values keyed by target
+/** values keyed by target */
 var valuesCache = new WeakMap();
 
 //as far properties can change it’s behaviour dynamically, we have to keep real states somewhere
@@ -48,8 +51,15 @@ var ignoreCache = new WeakMap();
 var settersCache = new WeakMap();
 
 
-//apply state to a target
-//native properties sohuld be passed as a blacklist
+/**
+ * Apply state to a target
+ *
+ * @property {*} target Any object to apply state descriptor
+ * @property {object} props An object - set of properties
+ * @property {(object|undefined)} ignoreProps Native properties or alike -
+ *                                            blacklisted items which should be ignored
+ */
+
 function applyState(target, props, ignoreProps){
 	// console.log('applyState', props)
 
@@ -440,9 +450,7 @@ function applyProps(target, props){
 
 		//extendify descriptor value
 		if (isObject(value)){
-			for (var propName in value){
-				state[propName] = value[propName];
-			}
+			extend(state, value);
 		}
 
 		else {
@@ -577,10 +585,18 @@ function unlock(target, name){
 
 
 
-//Disentangle listed keys
-function flattenKeys(set, deep){
-	//TODO: deal with existing set[key] - extend them?
+/**
+ * Disentangle listed keys
+ *
+ * @param {object} set An object with key including listed declarations
+ * @example {'a,b,c': 1}
+ *
+ * @param {boolean} deep Whether to flatten nested objects
+ *
+ * @return {oblect} Source set passed {@link set}
+ */
 
+function flattenKeys(set, deep){
 	for(var keys in set){
 		var value = set[keys];
 
@@ -594,13 +610,32 @@ function flattenKeys(set, deep){
 	}
 
 	function setKey(key){
-		set[key] = value;
+		//if existing key - extend, if possible
+		if (isObject(value) && isObject(set[key])) {
+			set[key] = extend(set[key], value);
+		}
+		//or replace
+		else {
+			set[key] = value;
+		}
 	}
 
 	return set;
 }
 
 
+/**
+ * Stupidst extender
+ *
+ * @return {object} Source set
+ */
+
+function extend(a,b){
+	for (var n in b){
+		a[n] = b[n];
+	}
+	return a;
+}
 
 //make sure there’re no references to the target, so there’re no memory leaks
 function unapplyState(target, props){
