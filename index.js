@@ -2,7 +2,7 @@
 module['exports'] = applyState;
 
 
-var enot = require('enot/index.min');
+var enot = require('enot');
 var _ = require('mutypes');
 var eachCSV = require('each-csv');
 
