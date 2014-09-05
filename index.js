@@ -32,10 +32,10 @@ var remainderStateName = '_';
 /** values keyed by target */
 var valuesCache = new WeakMap();
 
-//as far properties can change it’s behaviour dynamically, we have to keep real states somewhere
+/** As far properties can change it’s behaviour dynamically, we have to keep real states somewhere */
 var statesCache = new WeakMap();
 
-//set of initial (root) prop values
+/** set of initial (root) prop values - we need it in resetting value */
 var propsCache = new WeakMap();
 
 //list of dependencies for the right init order
@@ -216,7 +216,11 @@ function createProps(target, props){
 
 
 
-//create & save setter on target
+/**
+ * create & save setter on target
+ * @todo optimize setter create for diffirent kind of descriptor
+ */
+
 var inSetValues = new WeakMap();
 function createSetter(target, name){
 	var setter = function(value){
@@ -313,7 +317,7 @@ function createSetter(target, name){
 
 		//save new self value
 		// targetValues[name] = value;
-		applyValue(target, name, value)
+		applyValue(target, name, value);
 		// console.log('set succeeded', name, value)
 
 		var newStateName = has(propState, value) ? value : remainderStateName;
@@ -402,7 +406,12 @@ function initProp(target, name){
 
 	//handle init redirect
 	if (targetValues[name] !== beforeInit) return;
+
+	//presave target value (someone wants to get it beforehead)
+	valuesCache.get(target)[name] = initResult;
+
 	var isIgnored = ignoreCache.get(target)[name];
+
 	if (!isIgnored)	{
 		target[name] = initResult;
 	} else {

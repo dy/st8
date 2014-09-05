@@ -1571,4 +1571,24 @@ describe("State cases", function(){
 		assert.equal(a.a, 2)
 		assert.equal(a.b, 1)
 	})
+
+	it.skip("props circular dependency", function(){
+		//TODO: make it fail
+		var a = applyState({},{
+			x: {
+				init: 0,
+				set: function(){
+					var z = this.y + 1
+					return z;
+				}
+			},
+			y: {
+				init: 1,
+				set: function(){
+					var z = this.x + 1
+					return z;
+				}
+			}
+		})
+	})
 })
