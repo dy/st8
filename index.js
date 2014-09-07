@@ -1,5 +1,5 @@
 /** @module  st8 */
-module['exports'] = applyState;
+module.exports = applyState;
 
 
 var enot = require('enot');
@@ -8,14 +8,14 @@ var eachCSV = require('each-csv');
 
 
 //externs
-var isObject = _['isObject'];
-var has = _['has'];
-var isFn = _['isFn'];
-var isPlain = _['isPlain'];
-var isString = _['isString'];
+var isObject = _.isObject;
+var has = _.has;
+var isFn = _.isFn;
+var isPlain = _.isPlain;
+var isString = _.isString;
 
-var eOn = enot['on'];
-var eOff = enot['off'];
+var eOn = enot.on;
+var eOff = enot.off;
 
 
 //tech names
