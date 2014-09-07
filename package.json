@@ -1,6 +1,6 @@
 {
   "name": "st8",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "description": "Control state of any object",
   "main": "index.js",
   "dependencies": {
