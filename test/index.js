@@ -1591,4 +1591,35 @@ describe("State cases", function(){
 			}
 		})
 	})
+
+	it('Flatten listed keys', function(){
+		var log = [];
+
+		var a = applyState({}, {
+			s: {
+				'1,2,3,4': {
+
+				},
+				'1,2': {
+					f: function(){
+						log.push(1)
+					}
+				},
+
+				'3,4': {
+					f: function(){
+						log.push(2)
+					}
+				},
+				_: {
+
+				}
+			}
+		});
+		a.s = 1;
+
+		a.f();
+
+		assert.deepEqual(log, [1])
+	})
 })

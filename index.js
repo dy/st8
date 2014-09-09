@@ -3,16 +3,17 @@ module.exports = applyState;
 
 
 var enot = require('enot');
-var _ = require('mutypes');
+var type = require('mutypes');
 var eachCSV = require('each-csv');
+var extend = require('extend');
 
 
 //externs
-var isObject = _.isObject;
-var has = _.has;
-var isFn = _.isFn;
-var isPlain = _.isPlain;
-var isString = _.isString;
+var isObject = type.isObject;
+var has = type.has;
+var isFn = type.isFn;
+var isPlain = type.isPlain;
+var isString = type.isString;
 
 var eOn = enot.on;
 var eOff = enot.off;
@@ -613,15 +614,14 @@ function flattenKeys(set, deep){
 
 		if (/,/.test(keys)){
 			delete set[keys];
-
 			eachCSV(keys, setKey);
 		}
 	}
 
 	function setKey(key){
 		//if existing key - extend, if possible
-		if (isObject(value) && isObject(set[key])) {
-			set[key] = extend(set[key], value);
+		if (isObject(value) && isObject(set[key]) && value !== set[key]) {
+			set[key] = extend({}, set[key], value);
 		}
 		//or replace
 		else {
@@ -632,19 +632,6 @@ function flattenKeys(set, deep){
 	return set;
 }
 
-
-/**
- * Stupidst extender
- *
- * @return {object} Source set
- */
-
-function extend(a,b){
-	for (var n in b){
-		a[n] = b[n];
-	}
-	return a;
-}
 
 //make sure there’re no references to the target, so there’re no memory leaks
 function unapplyState(target, props){
