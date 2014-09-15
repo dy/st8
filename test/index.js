@@ -1622,4 +1622,30 @@ describe("State cases", function(){
 
 		assert.deepEqual(log, [1])
 	})
+
+
+	it("interindependent props", function(){
+		var i = 0;
+
+		var a = applyState({}, {
+			c: {
+				init: function(){
+					// console.group('init c')
+					this.fn()
+					// console.groupEnd('after init c')
+				}
+			},
+
+			f: {
+				_: {
+					fn: function(){
+						// console.log('call fn')
+						i++
+					}
+				}
+			}
+		});
+
+		assert.equal(i, 1);
+	})
 })

@@ -39,16 +39,16 @@ var statesCache = new WeakMap();
 /** set of initial (root) prop values - we need it in resetting value */
 var propsCache = new WeakMap();
 
-//list of dependencies for the right init order
+/** list of dependencies for the right init order */
 var depsCache = new WeakMap();
 
-//map of callbacks active on target
+/** map of callbacks active on target */
 var activeCallbacks = new WeakMap();
 
-//set of native properties per target
+/** set of native properties per target */
 var ignoreCache = new WeakMap();
 
-//set of target prop setters
+/** set of target prop setters */
 var settersCache = new WeakMap();
 
 
@@ -123,6 +123,7 @@ function applyState(target, props, ignoreProps){
 
 	//init values
 	for (propName in deps){
+		// console.log('init default', propName)
 		initProp(target, propName);
 	}
 
@@ -195,11 +196,12 @@ function createProps(target, props){
 				return function(){
 					// console.group('get ', name)
 					var propState = statesCache.get(target)[name];
+					//init, if is not
+					initProp(target, name);
+
 					var values = valuesCache.get(target);
 					var value = values[name];
 
-					//init, if is not
-					initProp(target, name);
 
 					//getting prop value just returns it’s real value
 					var getResult = callState(target, propState[getterName], value);
@@ -272,6 +274,7 @@ function createSetter(target, name){
 		else {
 			inSetValues.set(target, value);
 		}
+
 
 		//ignore leaving absent initial state
 		var initLock = unlock(target, initCallbackName + name);
@@ -365,7 +368,7 @@ function createSetter(target, name){
 
 
 
-//property initializer
+/** property initializer */
 function initProp(target, name){
 	var deps = depsCache.get(target);
 	if (!deps[name]) return;
@@ -422,7 +425,7 @@ function initProp(target, name){
 }
 
 
-//set value on target
+/** set value on target */
 function applyValue(target, name, value){
 	valuesCache.get(target)[name] = value;
 
@@ -447,7 +450,7 @@ function bindValue(target, name, value){
 }
 
 
-//take over properties by target
+/** take over properties by target */
 function applyProps(target, props){
 	if (!props) return;
 
@@ -481,7 +484,7 @@ function applyProps(target, props){
 	}
 }
 
-//unbind state declared props
+/** unbind state declared props */
 function unapplyProps(target, props){
 	if (!props) return;
 
