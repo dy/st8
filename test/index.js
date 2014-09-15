@@ -1648,4 +1648,18 @@ describe("State cases", function(){
 
 		assert.equal(i, 1);
 	})
+
+
+
+	it("stringy remainder state shortcut should be recognized as a redirect, not the state", function(){
+		var a = applyState({}, {
+			x: {
+				//TODO: avoid string iteration
+				init: 'abc',
+				_: 'abc'
+			}
+		});
+
+		assert.equal(a.x, 'abc')
+	})
 })

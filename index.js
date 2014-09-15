@@ -60,7 +60,6 @@ var settersCache = new WeakMap();
  * @property {(object|undefined)} ignoreProps Native properties or alike -
  *                                            blacklisted items which should be ignored
  */
-
 function applyState(target, props, ignoreProps){
 	// console.log('applyState', props)
 
@@ -131,7 +130,7 @@ function applyState(target, props, ignoreProps){
 }
 
 
-//create accessor on target for every stateful property
+/** create accessor on target for every stateful property */
 //TODO: getect init fact via existing value in storage (throw away storage objects)
 function createProps(target, props){
 	var deps = depsCache.get(target);
@@ -218,12 +217,10 @@ function createProps(target, props){
 }
 
 
-
 /**
  * create & save setter on target
  * @todo optimize setter create for diffirent kind of descriptor
  */
-
 var inSetValues = new WeakMap();
 function createSetter(target, name){
 	var setter = function(value){
@@ -367,7 +364,6 @@ function createSetter(target, name){
 }
 
 
-
 /** property initializer */
 function initProp(target, name){
 	var deps = depsCache.get(target);
@@ -452,7 +448,7 @@ function bindValue(target, name, value){
 
 /** take over properties by target */
 function applyProps(target, props){
-	if (!props) return;
+	if (!isObject(props)) return;
 
 	for (var name in props){
 		// console.group('apply prop', name)
@@ -486,7 +482,7 @@ function applyProps(target, props){
 
 /** unbind state declared props */
 function unapplyProps(target, props){
-	if (!props) return;
+	if (!isObject(props)) return;
 
 	for (var name in props){
 		// console.log('unbind', name)
@@ -525,7 +521,7 @@ function unapplyProps(target, props){
 }
 
 
-//try to enter a state property, like set/get/init/etc
+/** try to enter a state property, like set/get/init/etc */
 function callState(target, state, a1, a2) {
 	//undefined state (like no init meth)
 	if (state === undefined) {
@@ -559,7 +555,7 @@ function callState(target, state, a1, a2) {
 }
 
 
-//try to leave state: call after with new state name passed
+/** try to leave state: call after with new state name passed */
 function leaveState(target, state, a){
 	// console.log('leave', state)
 	if (!state) return a;
@@ -573,14 +569,13 @@ function leaveState(target, state, a){
 	}
 }
 
-
-function noop(){};
+function noop(){}
 
 function isStateTransitionName(name){
 	if (name === enterCallbackName || name === leaveCallbackName) return true;
 }
 
-//lock helpers
+/** lock helpers */
 var lockCache = new WeakMap();
 function lock(target, name){
 	if (!lockCache.get(target)) lockCache.set(target, {});
@@ -608,7 +603,6 @@ function unlock(target, name){
  *
  * @return {oblect} Source set passed {@link set}
  */
-
 function flattenKeys(set, deep){
 	for(var keys in set){
 		var value = set[keys];
@@ -636,7 +630,7 @@ function flattenKeys(set, deep){
 }
 
 
-//make sure there’re no references to the target, so there’re no memory leaks
+/** make sure there’re no references to the target, so there’re no memory leaks */
 function unapplyState(target, props){
 	//TODO
 }
