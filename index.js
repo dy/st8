@@ -6,6 +6,7 @@ var enot = require('enot');
 var type = require('mutypes');
 var eachCSV = require('each-csv');
 var extend = require('extend');
+var icicle = require('icicle');
 
 
 //externs
@@ -175,7 +176,7 @@ function createProps(target, props){
 
 
 		//set initialization lock in order to detect first set call
-		lock(target, initCallbackName + name);
+		icicle.freeze(target, initCallbackName + name);
 
 		//create fake setters for ignorable props
 		if (ignoreProps[name]) {
@@ -236,8 +237,8 @@ function createSetter(target, name){
 		//1. apply setter to value
 		var setResult;
 
-		if (!lock(target, setterName + name)) {
-			if (!lock(target, setterName + name + value)) {
+		if (icicle.freeze(target, setterName + name)) {
+			if (icicle.freeze(target, setterName + name + value)) {
 				// console.log('set', name, value)
 
 				try {
@@ -246,8 +247,8 @@ function createSetter(target, name){
 					throw e;
 				}
 
-				unlock(target, setterName + name + value);
-				unlock(target, setterName + name);
+				icicle.unfreeze(target, setterName + name + value);
+				icicle.unfreeze(target, setterName + name);
 
 				//self.value could've changed here because of inner set calls
 				if (inSetValues.has(target)) {
@@ -274,7 +275,7 @@ function createSetter(target, name){
 
 
 		//ignore leaving absent initial state
-		var initLock = unlock(target, initCallbackName + name);
+		var initLock = icicle.unfreeze(target, initCallbackName + name);
 		if (!initLock) {
 			//Ignore not changed value
 			if (value === oldValue) {
@@ -285,7 +286,7 @@ function createSetter(target, name){
 			//leaving an old state unbinds all events of the old state
 			var oldState = has(propState, oldValue) ? propState[oldValue] : propState[remainderStateName];
 
-			if (!lock(target, leaveCallbackName + oldState)) {
+			if (icicle.freeze(target, leaveCallbackName + oldState)) {
 				//try to enter new state (if redirect happens)
 				var leaveResult = leaveState(target, oldState, value, oldValue);
 
@@ -300,10 +301,10 @@ function createSetter(target, name){
 					}
 
 					// console.groupEnd()
-					return unlock(target, leaveCallbackName + oldState);
+					return icicle.unfreeze(target, leaveCallbackName + oldState);
 				}
 
-				unlock(target, leaveCallbackName + oldState);
+				icicle.unfreeze(target, leaveCallbackName + oldState);
 
 				//ignore redirect
 				if (targetValues[name] !== oldValue) {
@@ -322,7 +323,7 @@ function createSetter(target, name){
 		// console.log('set succeeded', name, value)
 
 		var newStateName = has(propState, value) ? value : remainderStateName;
-		if (!lock(target, name + newStateName)) {
+		if (icicle.freeze(target, name + newStateName)) {
 			//new state applies new props: binds events, sets values
 			var newState = propState[newStateName];
 
@@ -343,10 +344,10 @@ function createSetter(target, name){
 				}
 
 				// console.groupEnd()
-				return unlock(target, name + newStateName);
+				return icicle.unfreeze(target, name + newStateName);
 			}
 
-			unlock(target, name + newStateName);
+			icicle.unfreeze(target, name + newStateName);
 		}
 
 
@@ -574,23 +575,6 @@ function noop(){}
 function isStateTransitionName(name){
 	if (name === enterCallbackName || name === leaveCallbackName) return true;
 }
-
-/** lock helpers */
-var lockCache = new WeakMap();
-function lock(target, name){
-	if (!lockCache.get(target)) lockCache.set(target, {});
-	if (lockCache.get(target)[name]) return true;
-	lockCache.get(target)[name] = true;
-	return false;
-}
-
-function unlock(target, name){
-	var res = false;
-	if (lockCache.get(target)[name]) res = true;
-	lockCache.get(target)[name] = null;
-	return res;
-}
-
 
 
 /**
