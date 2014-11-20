@@ -1,4 +1,4 @@
-# st8&thinsp;—&thinsp;state controller
+# st8&thinsp;—&thinsp;state controller [![Build Status](https://travis-ci.org/dfcreative/st8.svg?branch=master)](https://travis-ci.org/dfcreative/st8)
 
 St8 provides stateful behaviour for any object.
 
