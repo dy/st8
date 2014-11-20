@@ -1,4 +1,4 @@
-# st8
+# st8&thinsp;—&thinsp;state provider
 
 St8 provides stateful behaviour for any object.
 
