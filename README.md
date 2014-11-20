@@ -5,7 +5,7 @@ St8 provides stateful behaviour for any object.
 [![NPM](https://nodei.co/npm/st8.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/st8/)
 
 
-## Use
+## Get started
 
 ```
 $ npm install st8
@@ -27,14 +27,14 @@ state(target, {
 			//value === 1
 			return value;
 		},
-		//called any time `a` changes
+		//called any time `a` has changed
 		changed: function(v){
 			assert.equal(v, 2);
 		}
 	},
 
 	b: {
-		//for any value of `b` (`_` wildcard) — apply setter to `a`
+		//for any value of `b` (`_` wildcard) — use that setter for `a`
 		_: {
 			a: {
 				set: function(v){
@@ -50,16 +50,16 @@ assert.equal(target.a, 2);
 ```
 
 
-## API
+## Documentation
 
-To apply state to any object:
+Apply state to any object:
 
 ```js
 target = state(target, stateDescriptor);
 ```
 
 
-State descriptor specification:
+State descriptor spec:
 
 ```js
 state(target, {
