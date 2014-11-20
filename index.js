@@ -1,13 +1,17 @@
 /** @module  st8 */
 module.exports = applyState;
 
+//TODO: ensure no memory leaks
+//TODO: group props to objects instead of sets of weakmaps
+//TODO: add proper destroyer
+
 
 var enot = require('enot');
 var type = require('mutypes');
 var eachCSV = require('each-csv');
 var extend = require('extend');
 var icicle = require('icicle');
-
+var flattenKeys = require('split-keys');
 
 //externs
 var isObject = type.isObject;
@@ -34,23 +38,56 @@ var remainderStateName = '_';
 /** values keyed by target */
 var valuesCache = new WeakMap();
 
-/** As far properties can change it’s behaviour dynamically, we have to keep real states somewhere */
+/** As far properties can change it’s behaviour dynamically, we have to keep actual states somewhere */
 var statesCache = new WeakMap();
 
-/** set of initial (root) prop values - we need it in resetting value */
+/** initial (root) prop values - we need it in resetting value */
 var propsCache = new WeakMap();
 
-/** list of dependencies for the right init order */
+/** dependencies for the right init order */
 var depsCache = new WeakMap();
 
-/** map of callbacks active on target */
+/** actual callbacks */
 var activeCallbacks = new WeakMap();
 
-/** set of native properties per target */
+/** native properties per target */
 var ignoreCache = new WeakMap();
 
-/** set of target prop setters */
+/** target prop setters */
 var settersCache = new WeakMap();
+
+
+
+/** per-property storage objects, keyed by target */
+// var propsCache = new WeakMap();
+
+/** property class */
+// function Property(){
+// }
+/*
+Property.prototype = {
+	constructor: Property,
+
+	//current value for property
+	value: undefined,
+
+	//actual (result) state
+	state: undefined,
+
+	//dependencies
+	deps: undefined,
+
+	//actual callback (value bound)
+	callback: fn,
+
+	//
+	ignore: false,
+
+	//actual setter for the property
+	set: fn
+}
+*/
+
 
 
 /**
@@ -574,43 +611,6 @@ function noop(){}
 
 function isStateTransitionName(name){
 	if (name === enterCallbackName || name === leaveCallbackName) return true;
-}
-
-
-/**
- * Disentangle listed keys
- *
- * @param {object} set An object with key including listed declarations
- * @example {'a,b,c': 1}
- *
- * @param {boolean} deep Whether to flatten nested objects
- *
- * @return {oblect} Source set passed {@link set}
- */
-function flattenKeys(set, deep){
-	for(var keys in set){
-		var value = set[keys];
-
-		if (deep && isObject(value)) flattenKeys(value, deep);
-
-		if (/,/.test(keys)){
-			delete set[keys];
-			eachCSV(keys, setKey);
-		}
-	}
-
-	function setKey(key){
-		//if existing key - extend, if possible
-		if (isObject(value) && isObject(set[key]) && value !== set[key]) {
-			set[key] = extend({}, set[key], value);
-		}
-		//or replace
-		else {
-			set[key] = value;
-		}
-	}
-
-	return set;
 }
 
 

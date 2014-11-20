@@ -10,7 +10,6 @@ var applyState = require('../index');
 
 
 describe("State cases", function(){
-
 	it("accessor of outer state defined in inner state", function(){
 		var target = applyState({}, {
 			a: {
@@ -1150,7 +1149,7 @@ describe("State cases", function(){
 
 				},
 				3: {
-					'this.z click': 'inc'
+					'@z click': 'inc'
 				}
 			},
 
