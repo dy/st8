@@ -1452,7 +1452,7 @@ describe("State cases", function(){
 		assert.equal(a.x, 1);
 	});
 
-	it("double :defer bind @dropdown_case (check for noop)")
+	it.skip("double :defer bind @dropdown_case (check for noop)")
 
 	it("ignore bind to non-str or non-fn events", function(){
 		var i = 0;
@@ -1658,7 +1658,7 @@ describe("State cases", function(){
 	});
 
 
-	it("loosely dependent properties order", function(){
+	it("loosely dependent properties order: plain prop", function(){
 		var i = 0;
 		var target = {
 			value: 1,
@@ -1675,8 +1675,34 @@ describe("State cases", function(){
 					enot.emit(this, 'change');
 				}
 			},
+			change: undefined
+		});
+
+		assert.equal(i, 1);
+	});
+
+
+	it.skip("loosely dependent properties order: descriptors props", function(){
+		var i = 0;
+		var target = {
+			value: 1,
 			change: function(){
 				i++;
+			}
+		};
+
+		applyState(target, {
+			value: {
+				set: function(val){
+				},
+				changed: function(val){
+					enot.emit(this, 'change');
+				}
+			},
+			change: {
+				init: function(){
+
+				}
 			}
 		});
 

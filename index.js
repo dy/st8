@@ -99,7 +99,7 @@ Property.prototype = {
  *                                            blacklisted items which should be ignored
  */
 function applyState(target, props, ignoreProps){
-	// console.log('applyState', props)
+	// console.group('applyState', props)
 
 	//create target private storage
 	if (!statesCache.has(target)) statesCache.set(target, {});
@@ -160,14 +160,26 @@ function applyState(target, props, ignoreProps){
 	//init values
 	//init plain props first
 	for (propName in props){
-		if (isPlain(props[propName]) || isFn(props[propName])) initProp(target, propName);
+		if (!props[propName] && props[propName] !== 0) {
+			initProp(target, propName);
+		}
 	}
-	//init descripted props then
+	for (propName in props){
+		if (isPlain(props[propName])) {
+			initProp(target, propName);
+		}
+	}
+	//init fns second
+	for (propName in props){
+		if (isFn(props[propName])) {
+			initProp(target, propName);
+		}
+	}
+	//init descriptors props last
 	for(propName in deps){
-		// console.log('init default', propName)
 		initProp(target, propName);
 	}
-
+	// console.groupEnd();
 	return target;
 }
 
