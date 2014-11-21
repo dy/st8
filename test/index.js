@@ -151,7 +151,6 @@ describe("State cases", function(){
 	});
 
 
-
 	it("append descriptors in states, unapply changes on leaving state", function(){
 		var a = applyState({}, {
 			a: {
@@ -331,8 +330,7 @@ describe("State cases", function(){
 		a.a = undefined;
 		assert.equal(i, 3 );
 		assert.equal(o, 2 );
-
-	})
+	});
 
 
 
@@ -381,7 +379,6 @@ describe("State cases", function(){
 		assert.equal(v, 3);
 		enot.emit(a, "e");
 		assert.equal(v, 1);
-
 	});
 
 	it("fire state events within before/after", function(){
@@ -434,7 +431,6 @@ describe("State cases", function(){
 		a.v = undefined
 		assert.equal(i, 4)
 		assert.equal(y, 2)
-
 	});
 
 
@@ -716,7 +712,6 @@ describe("State cases", function(){
 		a.a = 2;
 		assert.equal(a.a, 1);
 	})
-
 
 
 
@@ -1660,5 +1655,31 @@ describe("State cases", function(){
 		});
 
 		assert.equal(a.x, 'abc')
-	})
+	});
+
+
+	it("loosely dependent properties order", function(){
+		var i = 0;
+		var target = {
+			value: 1,
+			change: function(){
+				i++;
+			}
+		};
+
+		applyState(target, {
+			value: {
+				set: function(val){
+				},
+				changed: function(val){
+					enot.emit(this, 'change');
+				}
+			},
+			change: function(){
+				i++;
+			}
+		});
+
+		assert.equal(i, 1);
+	});
 })

@@ -5,11 +5,11 @@
   "main": "index.js",
   "dependencies": {
     "enot": "*",
-    "mutypes": "*",
     "each-csv": "*",
     "icicle": "*",
     "extend": "*",
-    "split-keys": "0.x"
+    "split-keys": "0.x",
+    "mutype": "~0.x"
   },
   "devDependencies": {
     "chai": "~1.9.1",

@@ -7,7 +7,7 @@ module.exports = applyState;
 
 
 var enot = require('enot');
-var type = require('mutypes');
+var type = require('mutype');
 var eachCSV = require('each-csv');
 var extend = require('extend');
 var icicle = require('icicle');
@@ -119,7 +119,6 @@ function applyState(target, props, ignoreProps){
 		if (has(Object, propName)) continue;
 
 		//ignore lc props
-		//FIXME: maybe it’s better to pass them externally
 		if (propName === createdCallbackName || propName === initCallbackName){
 			continue;
 		}
@@ -159,7 +158,12 @@ function applyState(target, props, ignoreProps){
 
 
 	//init values
-	for (propName in deps){
+	//init plain props first
+	for (propName in props){
+		if (isPlain(props[propName]) || isFn(props[propName])) initProp(target, propName);
+	}
+	//init descripted props then
+	for(propName in deps){
 		// console.log('init default', propName)
 		initProp(target, propName);
 	}
@@ -198,7 +202,7 @@ function createProps(target, props){
 
 		//append new value to the prototypes
 		for (propName in protoValues){
-			//FIXME: get proto in a more relizable way
+			//FIXME: get proto in a more reliable way
 			var valuesProto = values.__proto__;
 			if (!has(valuesProto, propName)) valuesProto[propName] = protoValues[propName];
 		}
@@ -215,7 +219,7 @@ function createProps(target, props){
 		//set initialization lock in order to detect first set call
 		icicle.freeze(target, initCallbackName + name);
 
-		//create fake setters for ignorable props
+		//create fake setters for ignored props
 		if (ignoreProps[name]) {
 			createSetter(target, name);
 			continue;
