@@ -1,11 +1,11 @@
-# st8&thinsp;—&thinsp;state controller [![Build Status](https://travis-ci.org/dfcreative/st8.svg?branch=master)](https://travis-ci.org/dfcreative/st8)
+# st8 [![Build Status](https://travis-ci.org/dfcreative/st8.svg?branch=master)](https://travis-ci.org/dfcreative/st8) ![Deps](https://david-dm.org/dfcreative/st8.svg) <a href="http://unlicense.org/UNLICENSE"><img src="http://upload.wikimedia.org/wikipedia/commons/6/62/PD-icon.svg" width="20"/></a>
 
-St8 provides stateful behaviour for any object.
-
-[![NPM](https://nodei.co/npm/st8.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/st8/)
+St8 (_state_) — a state controller for UI-components. It provides a natural and intuitive way of declaring properties and states, just like as if you draw a state diagram of a component. In general case, st8 provides stateful behaviour for any object.
 
 
 ## Get started
+
+To use in browser, use browserify.
 
 ```
 $ npm install st8
@@ -14,6 +14,7 @@ $ npm install st8
 ```js
 var state = require('st8');
 
+//a target component to apply properties (usually a class instance)
 var target = {
 	a: 1,
 	b: 2
@@ -161,6 +162,4 @@ state(target, {
 ```
 
 
-## License
-
-Unlicensed.
+[![NPM](https://nodei.co/npm/st8.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/st8/)
