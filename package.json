@@ -1,15 +1,15 @@
 {
   "name": "st8",
   "version": "0.1.23",
-  "description": "Control state of any object",
+  "description": "Component state controller. Core of any stateful UI-component.",
   "main": "index.js",
   "dependencies": {
     "enot": "*",
     "each-csv": "*",
     "icicle": "*",
     "extend": "*",
-    "split-keys": "0.x",
-    "mutype": "~0.x"
+    "split-keys": ">=0.x",
+    "mutype": ">=0.x"
   },
   "devDependencies": {
     "chai": "~1.9.1",

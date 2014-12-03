@@ -1,24 +1,24 @@
 /** @module  st8 */
 module.exports = applyState;
 
+//TODO: test :root click:not(.something) - fails in dropdown in poppy
 //TODO: ensure no memory leaks
 //TODO: group props to objects instead of sets of weakmaps
 //TODO: add proper destroyer
 
 
 var enot = require('enot');
-var type = require('mutype');
 var eachCSV = require('each-csv');
 var extend = require('extend');
 var icicle = require('icicle');
 var flattenKeys = require('split-keys');
 
 //externs
-var isObject = type.isObject;
-var has = type.has;
-var isFn = type.isFn;
-var isPlain = type.isPlain;
-var isString = type.isString;
+var isObject = require('mutype/is-object');
+var has = require('mutype/has');
+var isFn = require('mutype/is-fn');
+var isPlain = require('mutype/is-plain');
+var isString = require('mutype/is-string');
 
 var eOn = enot.on;
 var eOff = enot.off;
