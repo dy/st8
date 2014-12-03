@@ -1,6 +1,6 @@
 {
   "name": "st8",
-  "version": "0.1.23",
+  "version": "0.1.24",
   "description": "Component state controller. Core of any stateful UI-component.",
   "main": "index.js",
   "dependencies": {
