@@ -5,6 +5,9 @@ module.exports = applyState;
 //TODO: ensure no memory leaks
 //TODO: group props to objects instead of sets of weakmaps
 //TODO: add proper destroyer
+//TODO: do not create setter/getter for plain props
+//TODO: introduce evented array for array values - though it is impossible to catch specific value changing
+//TODO: it is difficult to handle states for float values
 
 
 var enot = require('enot');
@@ -19,6 +22,7 @@ var has = require('mutype/has');
 var isFn = require('mutype/is-fn');
 var isPlain = require('mutype/is-plain');
 var isString = require('mutype/is-string');
+var isNumber = require('mutype/is-number');
 
 var eOn = enot.on;
 var eOff = enot.off;
@@ -185,7 +189,7 @@ function applyState(target, props, ignoreProps){
 
 
 /** create accessor on target for every stateful property */
-//TODO: getect init fact via existing value in storage (throw away storage objects)
+//TODO: detect init fact via existing value in storage (throw away storage objects)
 function createProps(target, props){
 	var deps = depsCache.get(target);
 	var ignoreProps = ignoreCache.get(target);
@@ -290,8 +294,9 @@ function createSetter(target, name){
 		//1. apply setter to value
 		var setResult;
 
+		//FIXME: why do you need these freezes? Some init-recursion issues? Better raise an error, but optimize this
 		if (icicle.freeze(target, setterName + name)) {
-			if (icicle.freeze(target, setterName + name + value)) {
+			if (icicle.freeze(target, setterName + name + str(value))) {
 				// console.log('set', name, value)
 
 				try {
@@ -300,7 +305,7 @@ function createSetter(target, name){
 					throw e;
 				}
 
-				icicle.unfreeze(target, setterName + name + value);
+				icicle.unfreeze(target, setterName + name + str(value));
 				icicle.unfreeze(target, setterName + name);
 
 				//self.value could've changed here because of inner set calls
@@ -319,7 +324,6 @@ function createSetter(target, name){
 						return;
 					}
 				}
-
 			}
 		}
 		else {
@@ -339,7 +343,7 @@ function createSetter(target, name){
 			//leaving an old state unbinds all events of the old state
 			var oldState = has(propState, oldValue) ? propState[oldValue] : propState[remainderStateName];
 
-			if (icicle.freeze(target, leaveCallbackName + oldState)) {
+			if (icicle.freeze(target, leaveCallbackName + str(oldState))) {
 				//try to enter new state (if redirect happens)
 				var leaveResult = leaveState(target, oldState, value, oldValue);
 
@@ -354,10 +358,10 @@ function createSetter(target, name){
 					}
 
 					// console.groupEnd()
-					return icicle.unfreeze(target, leaveCallbackName + oldState);
+					return icicle.unfreeze(target, leaveCallbackName + str(oldState));
 				}
 
-				icicle.unfreeze(target, leaveCallbackName + oldState);
+				icicle.unfreeze(target, leaveCallbackName + str(oldState));
 
 				//ignore redirect
 				if (targetValues[name] !== oldValue) {
@@ -376,7 +380,7 @@ function createSetter(target, name){
 		// console.log('set succeeded', name, value)
 
 		var newStateName = has(propState, value) ? value : remainderStateName;
-		if (icicle.freeze(target, name + newStateName)) {
+		if (icicle.freeze(target, name + str(newStateName))) {
 			//new state applies new props: binds events, sets values
 			var newState = propState[newStateName];
 
@@ -397,10 +401,10 @@ function createSetter(target, name){
 				}
 
 				// console.groupEnd()
-				return icicle.unfreeze(target, name + newStateName);
+				return icicle.unfreeze(target, name + str(newStateName));
 			}
 
-			icicle.unfreeze(target, name + newStateName);
+			icicle.unfreeze(target, name + str(newStateName));
 		}
 
 
@@ -634,3 +638,6 @@ function isStateTransitionName(name){
 function unapplyState(target, props){
 	//TODO
 }
+
+//transform val to identifiable string
+function str(i){return isNumber(i) ? i.toFixed(3) : i + ''};
