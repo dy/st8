@@ -3,7 +3,7 @@
 St8 (_state_) — a state controller for UI-components. It provides a natural and intuitive way of declaring properties and states, just like as if you draw a state diagram of a component. In general case, st8 provides stateful behaviour for any object.
 
 
-## Get started
+# Get started
 
 To use in browser, use browserify.
 
@@ -35,7 +35,7 @@ state(target, {
 	},
 
 	b: {
-		//for any value of `b` (`_` wildcard) — use that setter for `a`
+		//for any value of `b` (`_` wildcard) — use a setter for `a`
 		_: {
 			a: {
 				set: function(v){
@@ -51,16 +51,9 @@ assert.equal(target.a, 2);
 ```
 
 
-## Documentation
+# Specs
 
-Apply state to any object:
-
-```js
-target = state(target, stateDescriptor);
-```
-
-
-State descriptor spec:
+Putting all together case:
 
 ```js
 state(target, {
@@ -75,32 +68,35 @@ state(target, {
 		/**
 		 * Property hooks
 		 */
+
 		//called once on init
 		init: function(initValue){
 			//go to state 1
 			return 1;
 		},
 
-		//getter
+		//getter - called on each get
 		get: function(value){
 			return value * 5
 		},
 
-		//setter, returned value is used as a new value
+		//setter - called on each set
 		set: function(value, oldValue){
 			if (value < 20) return oldValue;
 
+			//returned value is used as a new value
 			return value / 5;
 		},
 
-		//called each time on change
+		//called on each change
 		changed: function(value, oldValue){
 			this.updateSomething();
 		},
 
 
 		/**
-		 * State values, each key corresponds to the value of that property
+		 * State values
+		 * Each key corresponds to the value of the property
 		 */
 
 		//applied when mySpecialProperty === 1
@@ -128,7 +124,8 @@ state(target, {
 
 
 	/**
-	 * Events.
+	 * Events
+	 * Declared along with properties.
 	 * Enot is used for events: https://github.com/dfcreative/enot
 	 */
 
@@ -161,5 +158,16 @@ state(target, {
 });
 ```
 
+# Typical use
+
+A typical use case of st8 is to declare component options by it. You init state in a component constructor, passing side options (maybe parsed from an element data-attributes) to the state, and st8 takes the control over a component.
+
+Components build with st8:
+
+* [slidy](https://github.com/dfcreative/slidy) — a versatile slider
+* [draggy](https://github.com/dfcreative/draggy) — a draggable behaviour provider
+* [poppy](https://github.com/dfcreative/poppy) — popups, tooltips, dropdowns and overlays provider
+
+St8 is a successor of [mod](https://github.com/dfcreative/poppy) in that it’s it’s core.
 
 [![NPM](https://nodei.co/npm/st8.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/st8/)
