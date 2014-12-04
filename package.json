@@ -7,7 +7,7 @@
     "enot": "*",
     "each-csv": "*",
     "icicle": "*",
-    "extend": "*",
+    "xtend": "~4.0.0",
     "split-keys": ">=0.x",
     "mutype": ">=0.x"
   },

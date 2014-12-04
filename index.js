@@ -9,7 +9,7 @@ module.exports = applyState;
 
 var enot = require('enot');
 var eachCSV = require('each-csv');
-var extend = require('extend');
+var extend = require('xtend/mutable');
 var icicle = require('icicle');
 var flattenKeys = require('split-keys');
 
