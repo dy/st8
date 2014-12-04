@@ -23,6 +23,8 @@ var isFn = require('mutype/is-fn');
 var isPlain = require('mutype/is-plain');
 var isString = require('mutype/is-string');
 var isNumber = require('mutype/is-number');
+var isArray = require('mutype/is-array');
+var round = require('mumath/round');
 
 var eOn = enot.on;
 var eOff = enot.off;
@@ -640,4 +642,7 @@ function unapplyState(target, props){
 }
 
 //transform val to identifiable string
-function str(i){return isNumber(i) ? i.toFixed(3) : i + ''};
+function str(i){
+	if (isNumber(i) || isArray(i)) return round(i,.01);
+	return i + '';
+};

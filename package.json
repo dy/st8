@@ -7,9 +7,10 @@
     "enot": "*",
     "each-csv": "*",
     "icicle": "*",
-    "xtend": "~4.0.0",
+    "xtend": ">=4.0.0",
     "split-keys": ">=0.x",
-    "mutype": ">=0.x"
+    "mutype": ">=0.x",
+    "mumath": ">=0.4.1"
   },
   "devDependencies": {
     "chai": "~1.9.1",
