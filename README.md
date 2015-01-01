@@ -1,7 +1,7 @@
 # st8 [![Build Status](https://travis-ci.org/dfcreative/st8.svg?branch=master)](https://travis-ci.org/dfcreative/st8) ![Deps](https://david-dm.org/dfcreative/st8.svg) <a href="http://unlicense.org/UNLICENSE"><img src="http://upload.wikimedia.org/wikipedia/commons/6/62/PD-icon.svg" width="20"/></a>
 
 
-St8 is a tiny state machine for describing components behaviour naturally rather than creating events mess.
+St8 is a tiny state machine for naturally describing components behaviour rather than creating events mess.
 
 
 # Get started
@@ -29,11 +29,9 @@ var state = new State({
 	//state 2
 	2: {
 		before: function(){
-
 		},
 
 		after: function(){
-
 		}
 	},
 
@@ -54,7 +52,7 @@ var state = new State({
 	}
 },
 
-//optionally pass context to bind callbacks
+//optionally pass context for callbacks
 target
 );
 
