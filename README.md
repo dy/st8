@@ -19,10 +19,8 @@ var state = new State({
 	//state 1
 	1: {
 		before: function(){
-
 		},
 		after: function(){
-
 		}
 	},
 
@@ -30,7 +28,6 @@ var state = new State({
 	2: {
 		before: function(){
 		},
-
 		after: function(){
 		}
 	},
@@ -74,6 +71,11 @@ State inherits [emitter](https://github.com/component/emitter), in that it has m
 
 # API
 
+### `State(states [, context])`
+
+Create a new state machine based on the `states` object. Optionally pass a context for callbacks.
+
+
 ### `State.prototype.get()`
 
 Get current state. Triggers `get`.
@@ -87,15 +89,12 @@ Go to a new state. Triggers `set`.
 
 # Use-cases
 
-### [Draggable](https://github.com/dfcreative/draggable)
-
+* [Draggable](https://github.com/dfcreative/draggable)
 Drag state: idle, threshold, drag, release, autoscroll
 
-### Slidy
+* [Slidy](https://github.com/dfcreative/slidy)
 
-
-### Popup
-
+* [Poppy](https://github.com/dfcreative/poppy)
 Visibility states: visible, hidden
 
 
