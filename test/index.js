@@ -5,279 +5,112 @@ if (typeof Event === 'undefined') global.Event = function(){};
 
 var assert = require('chai').assert;
 var enot = require('enot');
-var applyState = require('../index');
+var State = require('..');
+
+
 
 
 
 describe("State cases", function(){
-	it("accessor of outer state defined in inner state", function(){
-		var target = applyState({}, {
-			a: {
-				init: function(){
-					return 1;
-				},
-				changed: function(v){
-					assert.equal(v, 2);
-				}
-			},
 
-			b: {
-				_: {
-					a: {
-						set: function(v){
-							// console.log('set called')
-							assert.equal(v,1);
-							return 2;
-						}
-					}
-				}
-			}
-		});
-
-		assert.equal(target.a, 2)
-	});
-
-
-	it("fns declared within states", function(){
-		var a = applyState({}, {
-			a: {
-				init: 1,
-				changed: function(v){
-					this.f();
-				}
-			},
-			x: {
-				_: {
-					before: function(){
-						this.f()
-					},
-					f: function(){
-					}
-				}
-			}
-		});
-	});
-
-
-	it("unravel hidden properties", function(){
-		var a = applyState({}, {
-			a: {
-				init: 1,
-				changed: function(v){
-					this.f();
-				}
-			},
-			x: {
-				1: {
-					before: function(){
-						this.f()
-					},
-					f: function(){
-					}
-				}
-			}
-		});
-	});
-
-
-	it("any state name is possible", function(){
-		var log = [];
-
-		var target = applyState({}, {
-			a: {
-				init: {
-					before: function(){
-						// console.log('bi')
-						log.push('bi')
-					},
-					after: function(){
-						log.push('ai')
-					}
-				},
-
-				set: {
-					before: function(){
-						log.push('bs')
-						// console.log('bs')
-					},
-
-					after: function(){
-						log.push('as')
-
-					}
-				},
-
-				get: {
-					before: function(){
-						log.push('bg')
-						// console.log('bg')
-
-					},
-
-					after: function(){
-						log.push('ag')
-
-					}
-				},
-
-				changed: {
-					before: function(){
-						log.push('bc')
-						// console.log('bc')
-
-					},
-
-					after: function(){
-						log.push('ac')
-
-					}
-				},
-
-				_: {
-					before: function(){
-						log.push('b_')
-						// console.log('b_')
-					},
-
-					after: function(){
-						log.push('a_')
-					}
-				}
-			}
-		});
-
-		assert.deepEqual(log, ['bi', 'bs', 'b_'])
-		assert.equal(target.a, undefined)
-	});
-
-
-	it("append descriptors in states, unapply changes on leaving state", function(){
-		var a = applyState({}, {
-			a: {
-				get: function(){
-					return 1
-				}
-			},
-
-			b: {
-				1: {
-					a: {
-						get: function(){
-							return 2
-						}
-					}
-				}
-			}
-		});
-
-		assert.equal(a.a, 1);
-
-		a.b = 1;
-		assert.equal(a.a, 2);
-
-		a.b = 2;
-		assert.equal(a.a, 1);
-	});
-
+	it("keep passed context");
 
 
 	it("perform state transitions", function(){
 		var state, outState;
 
-		var a = applyState({}, {
-			a: {
-				1: {
-					before: function(){
-						// console.log("before 1")
-						state = this.a
-					},
-					after: function(){
-						// console.log("after 1")
-						outState = this.a
-					}
+		var a = new State({
+			1: {
+				before: function(){
+					console.log("before 1")
+					state = this.get()
 				},
-				2: {
-					before: function(){
-						state = this.a
-					},
-					after: function(){
-						outState = this.a
-					}
+				after: function(){
+					console.log("after 1")
+					outState = this.get()
+				}
+			},
+			2: {
+				before: function(){
+					state = this.get()
 				},
-				3: {
-					before: function(){
-						// console.log('before 3')
-						state = this.a
-					},
-					after: function(){
-						// console.log('after 3')
-						outState = this.a
-					}
+				after: function(){
+					outState = this.get()
+				}
+			},
+			3: {
+				before: function(){
+					// console.log('before 3')
+					state = this.get()
 				},
-				//this shouldn’t be entered unless string 'undefined' passed
-				undefined: {
-					before: function(){
-						// console.log("beforeundefined", this.a)
-						state = this.a
-					},
-					after: function(){
-						// console.log("afterundefined", this.a)
-						outState = this.a
-					}
+				after: function(){
+					// console.log('after 3')
+					outState = this.get()
+				}
+			},
+			//this shouldn’t be entered unless string 'undefined' passed
+			undefined: {
+				before: function(){
+					// console.log("beforeundefinedstate", this.get())
+					state = this.get()
 				},
-				'null': {
-					before: function(){
-						// console.log("beforenullstate", this.a)
-						state = this.a
-					},
-					after: function(){
-						// console.log("afternullstate", this.a)
-						outState = this.a
-					}
+				after: function(){
+					// console.log("afterundefined", this.get())
+					outState = this.get()
+				}
+			},
+			null: {
+				before: function(){
+					// console.log("beforenullstate", this.get())
+					state = this.get()
 				},
-				//this should be a case for `undefined` state
-				_: {
-					before: function(){
-						// console.log("before remainder")
-					},
+				after: function(){
+					// console.log("afternullstate", this.get())
+					outState = this.get()
+				}
+			},
+			//this should be a case for `undefined` state
+			_: {
+				before: function(){
+					// console.log("before remainder")
+				},
 
-					after: function(){
-						// console.log("after remainder")
-					}
+				after: function(){
+					// console.log("after remainder")
 				}
 			}
-		})
+		});
+
+		a.set();
 
 		// console.log(A.properties)
-		assert.strictEqual(state, undefined)
-		assert.strictEqual(outState, undefined)
-		a.a = null;
-		assert.strictEqual(state, null)
-		assert.strictEqual(outState, undefined)
-		// console.log('-----a.a = 1')
-		a.a = 1;
-		assert.strictEqual(state, 1)
-		assert.strictEqual(outState, null)
-		a.a = 2;
-		assert.strictEqual(state, 2)
-		assert.strictEqual(outState, 1)
-		a.a = 3;
-		assert.equal(state, 3)
-		assert.equal(outState, 2)
+		assert.strictEqual(state, undefined);
+		assert.strictEqual(outState, undefined);
+		a.set(null);
+		assert.strictEqual(state, null);
+		assert.strictEqual(outState, undefined);
+		// console.log('-----a.set(1)');
+		a.set(1);
+		assert.strictEqual(state, 1);
+		assert.strictEqual(outState, null);
+		a.set(2);
+		assert.strictEqual(state, 2);
+		assert.strictEqual(outState, 1);
+		a.set(3);
+		assert.equal(state, 3);
+		assert.equal(outState, 2);
 		// delete a.a;
-		// assert.equal(a.a, 3)
-		// console.log('--------a.a = undefined')
-		a.a = undefined;
-		assert.equal(state, undefined)
-		assert.equal(outState, 3)
+		// assert.equal(a.a, 3);
+		// console.log('--------a.a = undefined');
+		a.set(undefined);
+		assert.equal(state, undefined);
+		assert.equal(outState, 3);
 	});
 
 
 
 	it("undefined states & redirections", function(){
-		var a = applyState({}, {
-			a: {
-				init: 'x',
+		var a = new State({
 				undefined: null,
 				x: null,
 				null: 'y',
@@ -285,10 +118,11 @@ describe("State cases", function(){
 				1: 2,
 				2: 8,
 				_: false
-			}
-		})
+		});
 
-		assert.equal(a.a, 2);
+		a.set('x');
+
+		assert.equal(a.get(), 2);
 	});
 
 
@@ -296,294 +130,178 @@ describe("State cases", function(){
 	it("init remainder state", function(){
 		var i = 0, o = 0;
 
-		var a = applyState({},{
-			a: {
-				_: {
-					before: function(){
-						// console.log("before _")
-						i++
-					},
-					after: function(){
-						// console.log("after _")
-						o++
-					}
+		var a = new State({
+			_: {
+				before: function(){
+					// console.log("before _")
+					i++
 				},
-				1: {
-					before: function(){
-						i++
-					},
-					after: function(){
-						o++
-					}
+				after: function(){
+					// console.log("after _")
+					o++
 				}
-
+			},
+			1: {
+				before: function(){
+					i++
+				},
+				after: function(){
+					o++
+				}
 			}
-		})
+		});
+
+		a.set();
 
 		assert.equal(i, 1 );
 		assert.equal(o, 0 );
 		// console.log("---------a.a = 1")
-		a.a = 1;
+		a.set(1);
 		assert.equal(i, 2 );
 		assert.equal(o, 1 );
 		// console.log("---------a.a = undefined")
-		a.a = undefined;
+		a.set();
 		assert.equal(i, 3 );
 		assert.equal(o, 2 );
 	});
 
 
-
-	it("unbind/bind events when component switches", function(){
-		var v;
-		var a = applyState({}, {
-			a: {
-				init: 1,
-
-				1: {
-					e: function(){
-						v = 1
-					}
+	it("switch state from within `before` and `after` to any other state", function(){
+		var a = new State({
+			1: {
+				before: function(){
+					// console.log("before 1")
+					this.set(2);
 				},
-				2: {
-					e: function(){
-						v = 2
-					}
-				},
-				3: {
-					e: 'f'
+				after: function(){
+					// console.log("after 1")
 				}
-
 			},
-			f: function(){
-				v = 3;
+			2: {
+				before: function(){
+					// console.log("before 2")
+					this.set(3);
+				},
+				after: function(){
+					// console.log("after 2")
+				}
+			},
+			3: {
+				before: function(){
+					// console.log("before 3")
+				},
+				after: function(){
+					// console.log("after 3")
+					this.set(4);
+				}
+			},
+			4: {
+				before: function(){
+					// console.log("before 4")
+					this.set(5);
+				},
+				after: function(){
+					// console.log("after 4")
+				}
 			}
 		});
 
-		assert.equal(v, undefined)
-		// console.log("-----------dispatch e")
-		enot.emit(a, "e");
-		assert.equal(v, 1)
-		// console.log('-------a=2')
-		a.a = 2;
-		assert.equal(v, 1)
-		enot.emit(a, "e");
-		assert.equal(v, 2)
-		// console.log('-------a=3')
-		a.a = 3;
-		assert.equal(v, 2);
-		// console.log('-------fire e')
-		enot.emit(a, "e");
-		assert.equal(v, 3);
-		a.a = 1;
-		assert.equal(v, 3);
-		enot.emit(a, "e");
-		assert.equal(v, 1);
-	});
-
-	it("fire state events within before/after", function(){
-		var i = 0, y = 0;
-		var a = applyState({}, {
-			v: {
-				_: {
-					before: function(){
-						// console.log("_:before", this)
-						enot.emit(this, "a")
-					},
-					after: function() {
-						// console.log("_:after")
-						enot.emit(this, "a")
-					},
-					a: function() {
-						// console.log("_:a")
-						i++
-					}
-				},
-
-				1: {
-					before: function() {
-						// console.log("1:before")
-						enot.emit(this, "a")
-					},
-					after: function() {
-						// console.log("1:after")
-						enot.emit(this, "a")
-					},
-					a: 'b'
-				}
-			},
-			b: function(){
-				// console.log("b")
-				y++
-			}
-		})
-
-		assert.equal(i, 1)
-		assert.equal(y, 0)
-		// console.log('------ fire a')
-		enot.emit(a, "a")
-		assert.equal(i, 2)
-		// console.log("------ v = 1")
-		a.v = 1;
-		assert.equal(i, 3)
-		assert.equal(y, 1)
-		// console.log("------ v = undefined")
-		a.v = undefined
-		assert.equal(i, 4)
-		assert.equal(y, 2)
-	});
-
-
-	it("switch state from within `before` and `after` to any other state", function(){
-		var a = applyState({}, {
-			a: {
-				init: 1,
-				1: {
-					before: function(){
-						// console.log("before 1")
-						this.a = 2
-					},
-					after: function(){
-						// console.log("after 1")
-					}
-				},
-				2: {
-					before: function(){
-						// console.log("before 2")
-						this.a = 3
-					},
-					after: function(){
-						// console.log("after 2")
-					}
-				},
-				3: {
-					before: function(){
-						// console.log("before 3")
-					},
-					after: function(){
-						// console.log("after 3")
-						this.a = 4
-					}
-				},
-				4: {
-					before: function(){
-						// console.log("before 4")
-						this.a = 5
-					},
-					after: function(){
-						// console.log("after 4")
-					}
-				}
-			}
-		})
-
-		assert.equal(a.a, 3)
-		// console.log("---- a.a = 2")
-		a.a = 2
-		// console.log(a.a)
-		assert.equal(a.a, 5)
+		a.set(1);
+		assert.equal(a.get(), 3)
+		// console.log("---- a = 2")
+		a.set(2);
+		// console.log(a.get())
+		assert.equal(a.get(), 5)
 	});
 
 
 
 
 	it("prevent entering state if before returned false", function(){
-		var a = applyState({}, {
-			a: {
-				init: 1,
-
-				1: {
-					before: function(){
-						// console.log("before 1")
-					}
-				},
-				2: {
-					before: function(){
-						// console.log("before 2")
-						return false;
-					}
+		var a = new State({
+			1: {
+				before: function(){
+					// console.log("before 1")
 				}
-
+			},
+			2: {
+				before: function(){
+					// console.log("before 2")
+					return false;
+				}
 			}
-		})
+		});
 
-		a.a = 2;
-		assert.equal(a.a, 1)
-	})
+		a.set(1);
+		a.set(2);
+		assert.equal(a.get(), 1);
+	});
 
 	it("prevent leaving state if after returned false", function(){
-		var a = applyState({}, {
-			a: {
-				init: 1,
-
-				1: {
-					before: function(){
-						// console.log("before 1")
-					}
-				},
-				2: {
-					after: function(){
-						// console.log("after 2")
-						return false;
-					}
+		var a = new State({
+			1: {
+				before: function(){
+					// console.log("before 1")
 				}
-
+			},
+			2: {
+				after: function(){
+					// console.log("after 2")
+					return false;
+				}
 			}
-		})
+		});
 
-		a.a = 2;
-		assert.equal(a.a, 2)
-		a.a = 1;
-		assert.equal(a.a, 2)
+		a.set(1);
+
+		a.set(2);
+		assert.equal(a.get(), 2);
+		a.set(1);
+		assert.equal(a.get(), 2);
 	});
 
 
 	it("enter state returned from before/after, if any", function(){
-		var a = applyState({}, {
-			a: {
-				init: 1,
-
-					1: {
-						before: function(){
-							// console.log("before 1")
-							return 2
-						}
-					},
-					2: {
-						before: function(){
-							// console.log("before 2")
-							return 3;
-						}
-					},
-					3: {
-						after: function(){
-							// console.log("after 3")
-							return 4
-						}
-					},
-					4: {
-						before: function(){
-							// console.log("before 4")
-							return 5
-						}
-					}
-
+		var a = new State({
+			1: {
+				before: function(){
+					// console.log("before 1")
+					return 2
+				}
+			},
+			2: {
+				before: function(){
+					// console.log("before 2")
+					return 3;
+				}
+			},
+			3: {
+				after: function(){
+					// console.log("after 3")
+					return 4
+				}
+			},
+			4: {
+				before: function(){
+					// console.log("before 4")
+					return 5
+				}
 			}
-		})
+		});
 
-		assert.equal(a.a, 3)
-		a.a = 2;
+		a.set(1);
+		assert.equal(a.get(), 3);
+
+		a.set(2);
 		// console.log(a.a)
-		assert.equal(a.a, 5)
-	})
+		assert.equal(a.get(), 5);
+	});
 
 	it("enter remainder state, if nothing other matched", function(){
 		var log = [];
 
-		var a = applyState({}, {
+		var a = new State({
 			a: {
-				init: 1,
-
 				1: {
 					before: function(){
 						// console.log("before 1")
@@ -606,23 +324,22 @@ describe("State cases", function(){
 						log.push("_after")
 					}
 				}
-
 			}
-		})
+		});
 
-		// console.log(A.properties)
+		a.set(1);
 
-		assert.equal(a.a, 3);
+		assert.equal(a.get(), 3);
 		assert.deepEqual(log, ["_before"]);
 
 		log = [];
-		a.a = 2;
-		assert.equal(a.a, 4);
+		a.set(2);
+		assert.equal(a.get(), 4);
 		assert.deepEqual(log, ["_after", "_before"])
 
 		log = [];
-		a.a = 8;
-		assert.equal(a.a, 8);
+		a.set(8);
+		assert.equal(a.get(), 8);
 		assert.deepEqual(log, ["_after", "_before"])
 	});
 
@@ -631,7 +348,7 @@ describe("State cases", function(){
 
 	it("keep states callbacks context", function(){
 		var i = 0
-		var a = applyState({}, {
+		var a = new State({
 			a: {
 				1: {
 					before: function(){
@@ -657,7 +374,7 @@ describe("State cases", function(){
 	})
 
 	it("redefine property behaviour by descriptors defined in states of other property", function(){
-		var a = applyState({}, {
+		var a = new State({
 			a: {
 				init: 3
 			},
@@ -696,7 +413,7 @@ describe("State cases", function(){
 	})
 
 	it("recognize function as a short state notation of `before` method", function(){
-		var a = applyState({}, {
+		var a = new State({
 			a: {
 				init: 1,
 				1: {},
@@ -716,7 +433,7 @@ describe("State cases", function(){
 
 
 	it("catch state recursions", function(){
-		var a = applyState({}, {
+		var a = new State({
 			a: {
 				init: 1,
 
@@ -810,7 +527,7 @@ describe("State cases", function(){
 	})
 
 	it("redefine variables in states", function(){
-		var a = applyState({}, {
+		var a = new State({
 			a: {
 				init: 1,
 
@@ -841,7 +558,7 @@ describe("State cases", function(){
 
 
 	it("redefine complicated nested stateful descirptors with self-links", function(){
-		var a = applyState({}, {
+		var a = new State({
 			a: {
 				init: 1,
 				1: 2,
@@ -866,7 +583,7 @@ describe("State cases", function(){
 	})
 
 	it("reset state variables to default values", function(){
-		var a = applyState({}, {
+		var a = new State({
 			v: {
 				init: 1,
 
@@ -892,7 +609,7 @@ describe("State cases", function(){
 
 
 	it("handle listed state values", function(){
-		var a = applyState({}, {
+		var a = new State({
 			a: {
 				init:1,
 
@@ -906,7 +623,7 @@ describe("State cases", function(){
 	})
 
 	it("handle redirect shortcuts", function(){
-		var a = applyState({}, {
+		var a = new State({
 			a: {
 				init: 1,
 
@@ -935,7 +652,7 @@ describe("State cases", function(){
 
 	it("properly throw to default values in undefined states", function(){
 		var log = [];
-		var a = applyState({}, {
+		var a = new State({
 			v: {
 				init: 1,
 
@@ -976,7 +693,7 @@ describe("State cases", function(){
 
 
 	it("handle weird state cases", function(){
-		var a = applyState({}, {
+		var a = new State({
 			a: {
 				'false': false,
 				x: false,
@@ -1031,7 +748,7 @@ describe("State cases", function(){
 
 
 	it("all state-dependent properties has to present on element in undefined state", function(){
-		var a = applyState({}, {
+		var a = new State({
 			a: {
 				1: {
 					x:1,
@@ -1051,7 +768,7 @@ describe("State cases", function(){
 	it("modify descriptors in runtime", function(){
 		var log = [];
 
-		var a = applyState({}, {
+		var a = new State({
 			a: {
 				1: {
 					b: {
@@ -1107,7 +824,7 @@ describe("State cases", function(){
 
 	it("nested states", function(){
 		//FIXME: expand this test
-		var a = applyState({}, {
+		var a = new State({
 			a: {
 				init: 1,
 
@@ -1194,7 +911,7 @@ describe("State cases", function(){
 
 
 	it("undefined get/set result", function(){
-		var a = applyState({}, {
+		var a = new State({
 			a: {
 				init: 1,
 				set: function(a){
@@ -1216,7 +933,7 @@ describe("State cases", function(){
 
 	it("same event in different states", function(){
 		var log = [];
-		var a = applyState({}, {
+		var a = new State({
 			a: {
 				_: {
 					x: function(){log.push(1)}
@@ -1249,7 +966,7 @@ describe("State cases", function(){
 			i++
 			// console.log("inc", i)
 		}
-		var a = applyState({}, {
+		var a = new State({
 			a: inc//function(){console.log(1)}
 		})
 
@@ -1365,7 +1082,7 @@ describe("State cases", function(){
 	})
 
 	it("transmit plain values", function(){
-		var a = applyState({}, {
+		var a = new State({
 			x:1
 		})
 
@@ -1390,7 +1107,7 @@ describe("State cases", function(){
 
 	it("self reference redirects", function(){
 		var i = 0;
-		var a = applyState({}, {
+		var a = new State({
 			$a: {
 				init: function(){
 					return {};
@@ -1441,7 +1158,7 @@ describe("State cases", function(){
 	})
 
 	it("init within init", function(){
-		var a = applyState({}, {
+		var a = new State({
 			x: {
 				init: function(){
 					this.x = 1;
@@ -1456,7 +1173,7 @@ describe("State cases", function(){
 
 	it("ignore bind to non-str or non-fn events", function(){
 		var i = 0;
-		var a = applyState({}, {
+		var a = new State({
 			x: false,
 			false: function(){i++}
 		});
@@ -1490,7 +1207,7 @@ describe("State cases", function(){
 	})
 
 	it("init variable from within state", function(){
-		var a = applyState({}, {
+		var a = new State({
 			s: {
 				_: {
 				},
@@ -1513,7 +1230,7 @@ describe("State cases", function(){
 	});
 
 	it("switching state shouldn’t erase value", function(){
-		var a = applyState({}, {
+		var a = new State({
 			a: {
 				1: {
 					x: 1
@@ -1551,7 +1268,7 @@ describe("State cases", function(){
 	})
 
 	it("flatten keys properly", function(){
-		var a = applyState({}, {
+		var a = new State({
 			a: {
 				set: function(v){
 					return v + 1;
@@ -1589,7 +1306,7 @@ describe("State cases", function(){
 	it('Flatten listed keys', function(){
 		var log = [];
 
-		var a = applyState({}, {
+		var a = new State({
 			s: {
 				'1,2,3,4': {
 
@@ -1621,7 +1338,7 @@ describe("State cases", function(){
 	it("interindependent props", function(){
 		var i = 0;
 
-		var a = applyState({}, {
+		var a = new State({
 			c: {
 				init: function(){
 					// console.group('init c')
@@ -1646,7 +1363,7 @@ describe("State cases", function(){
 
 
 	it("stringy remainder state shortcut should be recognized as a redirect, not the state", function(){
-		var a = applyState({}, {
+		var a = new State({
 			x: {
 				//TODO: avoid string iteration
 				init: 'abc',
