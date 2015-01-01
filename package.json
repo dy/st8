@@ -1,7 +1,7 @@
 {
   "name": "st8",
   "version": "0.1.27",
-  "description": "Component state controller. Core of any stateful UI-component.",
+  "description": "Tiny state machine for stateful UI-components",
   "main": "index.js",
   "dependencies": {
     "component-emitter": "^1.1.3",
@@ -22,7 +22,10 @@
   },
   "keywords": [
     "state",
-    "fsm"
+    "fsm",
+    "state machine",
+    "component",
+    "stateful"
   ],
   "author": "Deema Ywanov",
   "license": "unlicensed",
