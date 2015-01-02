@@ -1,6 +1,6 @@
 {
   "name": "st8",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Tiny state machine for stateful UI-components",
   "main": "index.js",
   "dependencies": {
