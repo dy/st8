@@ -73,11 +73,7 @@ proto.set = function (value) {
 				this[leaveFlag] = true;
 
 				//if oldstate has after method - call it
-				if (isFn(oldState[State.options.leaveCallback])){
-					leaveResult = oldState[State.options.leaveCallback].call(this.context);
-				} else {
-					leaveResult = oldState[State.options.leaveCallback];
-				}
+				leaveResult = getValue(oldState, State.options.leaveCallback, this.context);
 
 				//ignore changing if leave result is falsy
 				if (leaveResult === false) {
@@ -125,17 +121,10 @@ proto.set = function (value) {
 	if (!this[enterFlag]) {
 		this[enterFlag] = true;
 
-		if (isFn(newState)) {
-			enterResult = newState.call(this.context);
-		}
-		else if (!isObject(newState)) {
-			enterResult = newState;
-		}
-		else if (isFn(newState[State.options.enterCallback])) {
-			enterResult = newState[State.options.enterCallback].call(this.context);
-		}
-		else {
-			enterResult = newState[State.options.enterCallback];
+		if (isObject(newState)) {
+			enterResult = getValue(newState, State.options.enterCallback, this.context);
+		} else {
+			enterResult = getValue(states, newStateName, this.context);
 		}
 
 		//ignore entering falsy state
@@ -175,6 +164,16 @@ proto.set = function (value) {
 proto.get = function(){
 	return this.state;
 };
+
+
+/** Return value or fn result */
+function getValue(holder, meth, ctx){
+	if (isFn(holder[meth])) {
+		return holder[meth].call(ctx);
+	}
+
+	return holder[meth];
+}
 
 
 module.exports = State;
