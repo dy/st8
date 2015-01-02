@@ -19,16 +19,20 @@ var state = new State({
 	//state 1
 	1: {
 		before: function(){
+			...
 		},
 		after: function(){
+			...
 		}
 	},
 
 	//state 2
 	2: {
 		before: function(){
+			...
 		},
 		after: function(){
+			...
 		}
 	},
 
@@ -47,14 +51,10 @@ var state = new State({
 			return 2
 		}
 	}
-},
-
-//optionally pass context for callbacks
-target
-);
+});
 
 
-//go to state 3
+//enter state 3
 state.set(3);
 
 //get current state
@@ -66,36 +66,26 @@ state.on('change', function(to, from){
 });
 ```
 
+
 State inherits [emitter](https://github.com/component/emitter), in that it has methods `on`, `off`, `once`, `emit`.
 
 
 # API
 
-### `State(states [, context])`
+### State(states [, context])
 
-Create a new state machine based on the `states` object. Optionally pass a context for callbacks.
-
-
-### `State.prototype.get()`
-
-Get current state. Triggers `get`.
+Create a new state machine based on the `states` object. Optionally pass a `context` for callbacks.
 
 
-### `State.prototype.set(value)`
+### State.prototype.get()
 
-Go to a new state. Triggers `set`.
+Get current state.
 
 
+### State.prototype.set(value)
 
-# Use-cases
+Go to a new state.
 
-* [Draggable](https://github.com/dfcreative/draggable)
-Drag state: idle, threshold, drag, release, autoscroll
-
-* [Slidy](https://github.com/dfcreative/slidy)
-
-* [Poppy](https://github.com/dfcreative/poppy)
-Visibility states: visible, hidden
 
 
 [![NPM](https://nodei.co/npm/st8.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/st8/)
