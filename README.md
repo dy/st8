@@ -1,7 +1,7 @@
 # st8 [![Build Status](https://travis-ci.org/dfcreative/st8.svg?branch=master)](https://travis-ci.org/dfcreative/st8) [![Code Climate](https://codeclimate.com/github/dfcreative/st8/badges/gpa.svg)](https://codeclimate.com/github/dfcreative/st8) ![Deps](https://david-dm.org/dfcreative/st8.svg) <a href="http://unlicense.org/UNLICENSE"><img src="http://upload.wikimedia.org/wikipedia/commons/6/62/PD-icon.svg" width="20"/></a>
 
 
-St8 is a tiny state machine for naturally describing components behaviour rather than creating events mess.
+St8 is a tiny state machine for structural describing behaviour of components.
 
 
 # Get started
