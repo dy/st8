@@ -6,8 +6,8 @@
 
 
 var Emitter = require('component-emitter');
-var isFn = require('mutype/is-fn');
-var isObject = require('mutype/is-object');
+var isFn = require('is-function');
+var isObject = require('is-plain-object');
 
 
 /** Defaults */
