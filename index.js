@@ -5,7 +5,7 @@
  */
 
 
-var Emitter = require('component-emitter');
+var Emitter = require('events');
 var isFn = require('is-function');
 var isObject = require('is-plain-object');
 
