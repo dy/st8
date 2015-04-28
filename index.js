@@ -155,7 +155,9 @@ proto.set = function (value) {
 
 
 	// console.groupEnd();
-	return true;
+
+	//return context to chain calls
+	return this.context;
 };
 
 

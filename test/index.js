@@ -8,8 +8,6 @@ var State = require('..');
 
 
 
-
-
 describe("State", function(){
 
 	it("perform state transitions", function(){
@@ -433,5 +431,27 @@ describe("State", function(){
 		a.set(2);
 
 		assert.deepEqual(log, [2, 1]);
+	});
+
+	it("chain calls", function () {
+		var log = [];
+
+		var a = new State({
+			1: {
+
+			},
+			2: {
+
+			}
+		});
+
+		a.on('change', function(to, from){
+			log.push(to);
+			log.push(from);
+		});
+
+		a.set(1).set(2);
+
+		assert.deepEqual(log, [1, undefined, 2, 1]);
 	});
 });
