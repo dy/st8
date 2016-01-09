@@ -6,7 +6,6 @@
 
 
 var Emitter = require('events');
-var isFn = require('is-function');
 var isObject = require('is-plain-object');
 
 
@@ -170,7 +169,7 @@ proto.get = function(){
 
 /** Return value or fn result */
 function getValue(holder, meth, ctx){
-	if (isFn(holder[meth])) {
+	if (typeof holder[meth] === 'function') {
 		return holder[meth].call(ctx);
 	}
 
