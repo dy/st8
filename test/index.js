@@ -1,5 +1,5 @@
-let t = require('tape')
-let State = require('..');
+var t = require('tape')
+var State = require('..');
 
 
 t("perform state transitions", function(t){
