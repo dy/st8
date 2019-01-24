@@ -3,20 +3,16 @@
  *
  * Micro state machine.
  */
+'use strict'
 
 
-var Emitter = require('events');
-var isObject = require('is-plain-object');
+var isPrimitive = require('is-primitive')
 
 
-/** Defaults */
-
-State.options = {
-	leaveCallback: 'after',
-	enterCallback: 'before',
-	changeCallback: 'change',
-	remainderState: '_'
-};
+// API constants
+var OTHERWISE = State.OTHERWISE = '_'
+var ENTER = State.ENTER = 'enter'
+var EXIT = State.EXIT = 'exit'
 
 
 /**
@@ -41,13 +37,8 @@ function State(states, context){
 	this.context = context || this;
 
 	//initedFlag
-	this.isInit = false;
+	this.inited = false;
 }
-
-
-/** Inherit State from Emitter */
-
-var proto = State.prototype = Object.create(Emitter.prototype);
 
 
 /**
@@ -56,23 +47,25 @@ var proto = State.prototype = Object.create(Emitter.prototype);
  * @param {*} value Any new state to enter
  */
 
-proto.set = function (value) {
-	var oldValue = this.state, states = this.states;
-	// console.group('set', value, oldValue);
+State.prototype.set = function (value) {
+	var prevValue = this.state, states = this.states;
+	// console.group('set', value, prevValue);
 
 	//leave old state
-	var oldStateName = states[oldValue] !== undefined ? oldValue : State.options.remainderState;
+	var oldStateName = states[prevValue] !== undefined ? prevValue : OTHERWISE
 	var oldState = states[oldStateName];
 
-	var leaveResult, leaveFlag = State.options.leaveCallback + oldStateName;
-
-	if (this.isInit) {
-		if (isObject(oldState)) {
+	var leaveResult, leaveFlag = EXIT + oldStateName;
+	if (this.inited) {
+		if (oldState) {
 			if (!this[leaveFlag]) {
 				this[leaveFlag] = true;
 
-				//if oldstate has after method - call it
-				leaveResult = getValue(oldState, State.options.leaveCallback, this.context);
+				//if oldState has after method - call it
+				leaveResult = oldState[EXIT] && oldState[EXIT].call ?
+						oldState[EXIT].call(this.context) :
+					oldState[1] && oldState[1].call ?
+						oldState[1].call(this.context) : oldState[EXIT]
 
 				//ignore changing if leave result is falsy
 				if (leaveResult === false) {
@@ -92,43 +85,56 @@ proto.set = function (value) {
 				this[leaveFlag] = false;
 
 				//ignore redirect
-				if (this.state !== oldValue) {
+				if (this.state !== prevValue) {
 					return;
 				}
 			}
-
 		}
 
 		//ignore not changed value
-		if (value === oldValue) return false;
+		if (value === prevValue) return false;
 	}
 	else {
-		this.isInit = true;
+		this.inited = true;
 	}
-
 
 	//set current value
 	this.state = value;
 
 
 	//try to enter new state
-	var newStateName = states[value] !== undefined ? value : State.options.remainderState;
+	var newStateName = states.hasOwnProperty(value) ? value : OTHERWISE
 	var newState = states[newStateName];
-	var enterFlag = State.options.enterCallback + newStateName;
 	var enterResult;
+	var enterFlag = ENTER + newStateName;
 
 	if (!this[enterFlag]) {
 		this[enterFlag] = true;
 
-		if (isObject(newState)) {
-			enterResult = getValue(newState, State.options.enterCallback, this.context);
-		} else {
-			enterResult = getValue(states, newStateName, this.context);
+		if (newState) {
+			// enter pure function
+			if (newState.call) {
+				enterResult = newState.call(this.context)
+			}
+			// enter array
+			else if (Array.isArray(newState)) {
+				enterResult = (newState[0] && newState[0].call) ? newState[0].call(this.context, this) : newState[0]
+			}
+			// enter object with enter method
+			else if (newState.hasOwnProperty(ENTER)) {
+				enterResult = newState[ENTER].call ? newState[ENTER].call(this.context) : newState[ENTER];
+			}
+			else if (isPrimitive(newState)) {
+				enterResult = newState
+			}
+		}
+		else {
+			enterResult = newState
 		}
 
 		//ignore entering falsy state
 		if (enterResult === false) {
-			this.set(oldValue);
+			this.set(prevValue);
 			this[enterFlag] = false;
 			// console.groupEnd();
 			return false;
@@ -145,14 +151,6 @@ proto.set = function (value) {
 		this[enterFlag] = false;
 	}
 
-
-
-	//notify change
-	if (value !== oldValue)	{
-		this.emit(State.options.changeCallback, value, oldValue);
-	}
-
-
 	// console.groupEnd();
 
 	//return context to chain calls
@@ -162,19 +160,8 @@ proto.set = function (value) {
 
 /** Get current state */
 
-proto.get = function(){
+State.prototype.get = function(){
 	return this.state;
 };
-
-
-/** Return value or fn result */
-function getValue(holder, meth, ctx){
-	if (typeof holder[meth] === 'function') {
-		return holder[meth].call(ctx);
-	}
-
-	return holder[meth];
-}
-
 
 module.exports = State;
