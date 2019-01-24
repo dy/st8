@@ -23,10 +23,7 @@ var state = new State({
 	},
 
 	// shortcut for enter/exit
-	b: [
-		() => {},
-		() => {}
-	},
+	b: [ () => {}, () => {} ],
 
 	// enter shortcut, forwards to state d
 	c: () => 'd',
@@ -35,7 +32,7 @@ var state = new State({
 	d: 'a',
 
 	// any other state
-	default: 'a'
+	_: 'a'
 });
 
 
@@ -52,14 +49,14 @@ state.get(); // 'a'
 
 Create a new state machine based on the `states` object. Optionally pass a `context` for callbacks.
 
-### State.prototype.get()
+### state.get()
 
 Get current state.
 
 
-### State.prototype.set(value)
+### state.set(value)
 
-Transition to a new state.
+Transition to a new state, invoking necessary callbacks.
 
 
 [![NPM](https://nodei.co/npm/st8.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/st8/)
