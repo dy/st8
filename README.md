@@ -13,22 +13,12 @@ $ npm install st8
 var State = require('st8');
 
 var state = new State({
-	a: {
-		enter: () => {
-			...
-		},
-		exit: () => {
-			...
-		}
-	},
+	a: () => /* enter */ () => /* exit */ {},
 
-	// shortcut for enter/exit
-	b: [ () => {}, () => {} ],
-
-	// enter shortcut, forwards to state d
+	// enter shortcut, forward to d
 	c: () => 'd',
 
-	// shorter cut, redirects to state a
+	// redirect to a
 	d: 'a',
 
 	// any other state
