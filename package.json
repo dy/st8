@@ -1,6 +1,6 @@
 {
   "name": "st8",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Tiny state machine",
   "main": "st8.js",
   "type": "module",
