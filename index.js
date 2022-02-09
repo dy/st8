@@ -3,11 +3,6 @@
  *
  * Micro state machine.
  */
-'use strict'
-
-
-var isPrimitive = require('is-primitive')
-
 
 // API constants
 var OTHERWISE = State.OTHERWISE = '_'
@@ -164,4 +159,13 @@ State.prototype.get = function(){
 	return this.state;
 };
 
-module.exports = State;
+
+function isPrimitive(val) {
+  if (typeof val === 'object') {
+    return val === null;
+  }
+  return typeof val !== 'function';
+};
+
+export default State;
+

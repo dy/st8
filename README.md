@@ -1,6 +1,6 @@
-# st8 [![Build Status](https://travis-ci.org/dy/st8.svg?branch=master)](https://travis-ci.org/dy/st8)
+# st8 [![test](https://github.com/dy/st8/actions/workflows/test.yml/badge.svg)](https://github.com/dy/st8/actions/workflows/test.yml)
 
-_St8_ is a tiny state machine for structural describing behavior of components.
+> Tiny state machine for structural describing behavior of components.
 
 
 # Usage
@@ -10,7 +10,7 @@ $ npm install st8
 ```
 
 ```js
-var State = require('st8');
+import State from 'st8';
 
 var state = new State({
 	// enter, exit
@@ -51,3 +51,6 @@ Transition to a new state, invoking necessary callbacks.
 
 
 [![NPM](https://nodei.co/npm/st8.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/st8/)
+
+
+<p align="center">🕉<p>

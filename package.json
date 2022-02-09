@@ -3,11 +3,9 @@
   "version": "2.0.0",
   "description": "Tiny state machine",
   "main": "index.js",
-  "dependencies": {
-    "is-primitive": "^3.0.1"
-  },
+  "type": "module",
   "devDependencies": {
-    "tape": "^4.9.2"
+    "tape": "^5.5.0"
   },
   "scripts": {
     "test": "node test"
