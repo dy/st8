@@ -1,30 +1,9 @@
 <!doctype html>
 <meta charset="utf-8">
 <title>State tests</title>
-
-<link rel="stylesheet" href="../node_modules/mocha/mocha.css" />
-<div id="mocha"></div>
-<script src="../node_modules/mocha/mocha.js"></script>
-<script src="../node_modules/chai/chai.js"></script>
-
-<script>
-	mocha.setup('bdd');
-	assert = chai.assert;
-
+<script type="importmap">
+{
+	"imports": {"tst": "../node_modules/tst/tst.js"}
+}
 </script>
-
-<!-- dev -->
-<script src="../node_modules/require-stub/index.js"></script>
-
-<script src="index.js"></script>
-<!-- <script src="compliance.js"></script> -->
-
-<script>
-	if (window.mochaPhantomJS) {
-		mochaPhantomJS.run();
-	}
-	else {
-		mocha.checkLeaks();
-		mocha.run();
-	}
-</script>
+<script src="index.js" type="module"></script>

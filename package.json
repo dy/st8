@@ -4,9 +4,6 @@
   "description": "Tiny state machine",
   "main": "index.js",
   "type": "module",
-  "devDependencies": {
-    "tape": "^5.5.0"
-  },
   "scripts": {
     "test": "node test"
   },
@@ -25,5 +22,8 @@
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/dy/st8/issues"
+  },
+  "devDependencies": {
+    "tst": "^7.1.1"
   }
 }

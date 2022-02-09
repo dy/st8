@@ -1,4 +1,4 @@
-import t from 'tape'
+import t, {is} from 'tst'
 import State from '../index.js';
 
 
@@ -6,90 +6,69 @@ t("perform state transitions", function(t){
 	var state, outState;
 
 	var a = new State({
-		1: {
-			enter: function(){
-				// console.log("before 1")
+		1: function (){
+				// console.log("enter 1")
 				state = this.get()
-			},
-			exit: function(){
-				// console.log("after 1")
-				outState = this.get()
-			}
+				return () => {outState = this.get()}
 		},
-		2: [function(){
+		2: function(){
 				state = this.get()
-			},
-			function(){
-				outState = this.get()
-			}],
-		3: [function (s) {
-				console.log('enter 3', state)
+				return function(){outState = this.get()}
+		},
+		3: function (s) {
+				// console.log('enter 3', state)
 				state = this.get()
-			},
-			function (s) {
-				// console.log('after 3')
-				outState = this.get()
-			}
-		],
+				return function (s) {outState = this.get()}
+		},
 		//this shouldn’t be entered unless string 'undefined' passed
-		undefined: {
-			enter: function(){
+		undefined: function(){
 				// console.log("beforeundefinedstate", this.get())
 				state = this.get()
-			},
-			exit: function(){
-				// console.log("afterundefined", this.get())
-				outState = this.get()
-			}
+				return function(){
+					// console.log("afterundefined", this.get())
+					outState = this.get()
+				}
 		},
-		null: {
-			enter: function(){
-				// console.log("beforenullstate", this.get())
+		null: function(){
+				// console.log("enter null", this.get())
 				state = this.get()
-			},
-			exit: function(){
-				// console.log("afternullstate", this.get())
-				outState = this.get()
-			}
+				return function(){
+					// console.log("leave null", this.get())
+					outState = this.get()
+				}
 		},
 		//this should be a case for `undefined` state
-		_: {
-			enter: function(){
-				// console.log("before remainder")
-			},
-
-			exit: function(){
-				// console.log("after remainder")
-			}
+		_: function(){
+				return function(){
+					// console.log("after remainder")
+				}
 		}
 	});
 
 	a.set();
 
 	// console.log(A.properties)
-	t.strictEqual(state, undefined);
-	t.strictEqual(outState, undefined);
+	is(state, undefined);
+	is(outState, undefined);
 	a.set(null);
-	t.strictEqual(state, null, 'curr is 1');
-	t.strictEqual(outState, undefined, 'prev is undefined');
+	is(state, null, 'curr is 1');
+	is(outState, undefined, 'prev is undefined');
 	// console.log('-----a.set(1)');
 	a.set(1);
-	t.strictEqual(state, 1, 'curr is 1');
-	t.strictEqual(outState, null, 'prev is null');
+	is(state, 1, 'curr is 1');
+	is(outState, null, 'prev is null');
 	a.set(2);
-	t.strictEqual(state, 2, 'curr is 2');
-	t.strictEqual(outState, 1, 'prev is 1');
+	is(state, 2, 'curr is 2');
+	is(outState, 1, 'prev is 1');
 	a.set(3);
-	t.equal(state, 3, 'curr is 3');
-	t.equal(outState, 2, 'prev is 2');
+	is(state, 3, 'curr is 3');
+	is(outState, 2, 'prev is 2');
 	// delete a.a;
-	// t.equal(a.a, 3);
+	// is(a.a, 3);
 	// console.log('--------a.a = undefined');
 	a.set(undefined);
-	t.equal(state, undefined);
-	t.equal(outState, 3);
-
-	t.end()
+	is(state, undefined);
+	is(outState, 3);
 });
 
 t("undefined states & redirections", function(t){
@@ -105,30 +84,24 @@ t("undefined states & redirections", function(t){
 
 	a.set('x');
 
-	t.equal(a.get(), 2);
-
-	t.end()
+	is(a.get(), 2);
 });
 
 t("init remainder state", function(t){
 	var i = 0, o = 0;
 
 	var a = new State({
-		_: {
-			enter: function(){
+		_: function(){
 				// console.log("before _")
 				i++
-			},
-			exit: function(){
-				// console.log("after _")
-				o++
-			}
+				return function(){
+					// console.log("after _")
+					o++
+				}
 		},
-		1: {
-			enter: function(){
+		1: function(){
 				i++
-			},
-			exit: function(){
+				return function(){
 				o++
 			}
 		}
@@ -136,177 +109,136 @@ t("init remainder state", function(t){
 
 	a.set();
 
-	t.equal(i, 1 );
-	t.equal(o, 0 );
+	is(i, 1 );
+	is(o, 0 );
 	// console.log("---------a.a = 1")
 	a.set(1);
-	t.equal(i, 2 );
-	t.equal(o, 1 );
+	is(i, 2 );
+	is(o, 1 );
 	// console.log("---------a.a = undefined")
 	a.set();
-	t.equal(i, 3 );
-	t.equal(o, 2 );
-
-	t.end()
+	is(i, 3 );
+	is(o, 2 );
 });
 
 t("switch state from within `before` and `after` to any other state", function(t){
 	var a = new State({
-		1: {
-			enter: function(){
+		1: function(){
 				// console.log("before 1")
 				this.set(2);
-			},
-			exit: function(){
+			return function(){
 				// console.log("after 1")
 			}
 		},
-		2: {
-			enter: function(){
+		2: function(){
 				// console.log("before 2")
 				this.set(3);
-			},
-			exit: function(){
+			return function(){
 				// console.log("after 2")
 			}
 		},
-		3: {
-			enter: function(){
+		3: function(){
 				// console.log("before 3")
-			},
-			exit: function(){
-				// console.log("after 3")
+			return function(){
+				console.log("after 3")
 				this.set(4);
 			}
 		},
-		4: {
-			enter: function(){
+		4: function(){
 				// console.log("before 4")
 				this.set(5);
-			},
-			exit: function(){
+			return function(){
 				// console.log("after 4")
 			}
 		}
 	});
 
 	a.set(1);
-	t.equal(a.get(), 3)
+	is(a.get(), 3)
 	// console.log("---- a = 2")
 	a.set(2);
 	// console.log(a.get())
-	t.equal(a.get(), 5)
-
-	t.end()
+	is(a.get(), 5)
 });
 
 t("prevent entering state if before returned false", function(t){
 	var a = new State({
-		1: {
-			enter: function(){
+		1: function(){
 				// console.log("before 1")
-			}
 		},
-		2: {
-			enter: function(){
+		2: function(){
 				// console.log("before 2")
 				return false;
-			}
 		}
 	});
 
 	a.set(1);
 	a.set(2);
-	t.equal(a.get(), 1, 'did not enter 2');
-
-	t.end()
+	is(a.get(), 1, 'did not enter 2');
 });
 
 t("prevent leaving state if after returned false", function(t){
 	var a = new State({
-		1: {
-			enter: function(){
+		1: function(){
 				// console.log("before 1")
-			}
 		},
-		2: {
-			exit: function(){
-				// console.log("after 2")
-				return false;
-			}
+		2: function(){
+				return () => console.log('after 2')||false;
 		}
 	});
 
 	a.set(1);
 
 	a.set(2);
-	t.equal(a.get(), 2);
+	is(a.get(), 2);
 	a.set(1);
-	t.equal(a.get(), 2);
-
-	t.end()
+	is(a.get(), 2);
 });
 
 t("enter state returned from before/after, if any", function(t){
 	var a = new State({
-		1: {
-			enter: function(){
+		1: function(){
 				// console.log("before 1")
 				return 2
-			}
 		},
-		2: {
-			enter: function(){
+		2: function(){
 				// console.log("before 2")
 				return 3;
-			}
 		},
-		3: {
-			exit: function(){
+		3: function(){
 				// console.log("after 3")
-				return 4
-			}
+				() => 4
 		},
-		4: {
-			enter: function(){
+		4: function(){
 				// console.log("before 4")
 				return 5
-			}
 		}
 	});
 
 	a.set(1);
-	t.equal(a.get(), 3);
+	is(a.get(), 3);
 
 	// a.set(2);
 	// // console.log(a.a)
-	// t.equal(a.get(), 5);
-
-	t.end()
+	// is(a.get(), 5);
 });
 
 t("enter remainder state, if nothing other matched", function(t){
 	var log = [];
 
 	var a = new State({
-		1: {
-			enter: function(){
+		1: function(){
 				// console.log("before 1")
 				return 3;
-			}
 		},
-		2: {
-			enter: function(){
+		2: function(){
 				// console.log("before 2")
 				return 4;
-			}
 		},
-		_: {
-			enter: function(){
+		_: function(){
 				// console.log("_before")
 				log.push("_before");
-			},
-			exit: function(){
+			return function(){
 				// console.log("_after")
 				log.push("_after");
 			}
@@ -315,47 +247,42 @@ t("enter remainder state, if nothing other matched", function(t){
 
 	a.set(1);
 
-	t.equal(a.get(), 3);
-	t.deepEqual(log, ["_before"]);
+	is(a.get(), 3);
+	is(log, ["_before"]);
 
 	log = [];
 	a.set(2);
-	t.equal(a.get(), 4);
-	t.deepEqual(log, ["_after", "_before"])
+	is(a.get(), 4);
+	is(log, ["_after", "_before"])
 
 	log = [];
 	a.set(8);
-	t.equal(a.get(), 8);
-	t.deepEqual(log, ["_after", "_before"])
-
-	t.end()
+	is(a.get(), 8);
+	is(log, ["_after", "_before"])
 });
 
 t("keep states callbacks context", function(t){
 	var i = 0, b = {};
 	var a = new State({
-		1: {
-			enter: function(){
+		1: function(){
 				i++;
-				t.equal(this, b);
-			},
-			exit: function(){
+				is(this, b);
+			return function(){
 				i++;
-				t.equal(this, b);
+				is(this, b);
 			}
 		}
 	}, b);
 
 	a.set(1);
 	a.set(2);
-	t.equal(i, 2);
+	is(i, 2);
 
-	t.end()
 });
 
 t("recognize function as a short state notation of `before` method", function(t){
 	var a = new State({
-		1: {},
+		1: ()=>{},
 		_: function(){ return 1; }
 	});
 
@@ -363,11 +290,10 @@ t("recognize function as a short state notation of `before` method", function(t)
 	// console.log(A.properties)
 	//FIXME: parse states shortcuts
 
-	t.equal(a.get(), 1, 'entered 1');
+	is(a.get(), 1, 'entered 1');
 	a.set(2);
-	t.equal(a.get(), 1, 'did not enter anything else');
+	is(a.get(), 1, 'did not enter anything else');
 
-	t.end()
 });
 
 t("catch state recursions", function(t){
@@ -385,10 +311,9 @@ t("catch state recursions", function(t){
 
 	a.set(1);
 
-	t.equal(a.get(), 1);
+	is(a.get(), 1);
 	// t.throw(function(){}, "Too many redirects");
 
-	t.end()
 });
 
 t("handle weird state cases", function(t){
@@ -401,15 +326,14 @@ t("handle weird state cases", function(t){
 	});
 
 	a.set('z');
-	t.equal(a.get(), 'y');
+	is(a.get(), 'y');
 
 	a.set(false);
-	t.equal(a.get(), 'y');
+	is(a.get(), 'y');
 
 	a.set('x');
-	t.equal(a.get(), 'y');
+	is(a.get(), 'y');
 
-	t.end()
 });
 
 t("stringy remainder state shortcut should be recognized as a redirect, not the state", function(t){
@@ -419,9 +343,8 @@ t("stringy remainder state shortcut should be recognized as a redirect, not the 
 
 	a.set('abc');
 
-	t.equal(a.get(), 'abc')
+	is(a.get(), 'abc')
 
-	t.end()
 });
 
 t.skip("changed callback", function(t){
@@ -446,33 +369,6 @@ t.skip("changed callback", function(t){
 
 	a.set(2);
 
-	t.deepEqual(log, [2, 1]);
+	is(log, [2, 1]);
 
-	t.end()
-});
-
-t.skip("chain calls", function (t) {
-	var log = [];
-
-	var a = new State({
-		1: {
-
-		},
-		2: {
-
-		}
-	});
-
-	// a.on('change', function({to, from}){
-	// 	log.push(to);
-	// 	log.push(from);
-	// });
-
-	a.set(1).set(2);
-
-	// t.deepEqual(log, [1, undefined, 2, 1]);
-
-	// t.equal()
-
-	t.end()
 });

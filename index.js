@@ -14,10 +14,11 @@
  */
 
 class State {
-	#ready
 	#states
 	#context
 	#state
+	#teardown
+	#inited
 
 	constructor(states, context) {
 		//ignore existing state
@@ -31,9 +32,6 @@ class State {
 
 		//save context
 		this.#context = context || this;
-
-		//readyFlag
-		this.#ready = false;
 	}
 
 	/**
@@ -43,113 +41,66 @@ class State {
 	*/
 
 	set(value) {
-		var prevValue = this.#state, states = this.#states;
+		var prevValue = this.#state,
+				states = this.#states,
 		// console.group('set', value, prevValue);
 
 		//leave old state
-		var oldStateName = states[prevValue] !== undefined ? prevValue : OTHERWISE
-		var oldState = states[oldStateName];
+		oldStateName = states[prevValue] !== undefined ? prevValue : OTHERWISE,
+		oldState = states[oldStateName],
 
-		var leaveResult, leaveFlag = EXIT + oldStateName;
-		if (this.#ready) {
+		leaveResult, leaveFlag = '<' + oldStateName, teardown;
+
+		if (this.#inited) {
 			if (oldState) {
 				if (!this[leaveFlag]) {
 					this[leaveFlag] = true;
 
-					//if oldState has after method - call it
-					leaveResult = oldState[EXIT] && oldState[EXIT].call ?
-							oldState[EXIT].call(this.#context) :
-						oldState[1] && oldState[1].call ?
-							oldState[1].call(this.#context) : oldState[EXIT]
+					// if oldState has after method - call it
+					if (teardown = this.#teardown) this.#teardown = null, leaveResult = teardown?.call(this.#context)
 
-					//ignore changing if leave result is falsy
-					if (leaveResult === false) {
-						this[leaveFlag] = false;
-						// console.groupEnd();
-						return false;
-					}
+					// ignore changing if leave result is falsy
+					if (leaveResult === false) return this[leaveFlag] = false;
 
-					//redirect, if returned anything
-					else if (leaveResult !== undefined && leaveResult !== value) {
-						this.set(leaveResult);
-						this[leaveFlag] = false;
-						// console.groupEnd();
-						return false;
-					}
-
+					// redirect, if returned anything
+					else if (leaveResult !== undefined && leaveResult !== value) return this.set(leaveResult), this[leaveFlag] = false;
 					this[leaveFlag] = false;
 
-					//ignore redirect
-					if (this.#state !== prevValue) {
-						return;
-					}
+					// ignore redirect
+					if (this.#state !== prevValue) return;
 				}
-			}
 
-			//ignore not changed value
-			if (value === prevValue) return false;
+				// ignore not changed value
+				if (value === prevValue) return false;
+			}
 		}
-		else {
-			this.#ready = true;
-		}
+		else this.#inited = 1
 
 		//set current value
 		this.#state = value;
 
-
 		//try to enter new state
-		var newStateName = states.hasOwnProperty(value) ? value : OTHERWISE
-		var newState = states[newStateName];
-		var enterResult;
-		var enterFlag = ENTER + newStateName;
+		var newStateName = value in states ? value : OTHERWISE,
+				newState = states[newStateName],
+				enterResult,
+				enterFlag = '>' + newStateName;
 
 		if (!this[enterFlag]) {
 			this[enterFlag] = true;
 
-			if (newState) {
-				// enter pure function
-				if (newState.call) {
-					enterResult = newState.call(this.#context)
-				}
-				// enter array
-				else if (Array.isArray(newState)) {
-					enterResult = (newState[0] && newState[0].call) ? newState[0].call(this.#context, this) : newState[0]
-				}
-				// enter object with enter method
-				else if (newState.hasOwnProperty(ENTER)) {
-					enterResult = newState[ENTER].call ? newState[ENTER].call(this.#context) : newState[ENTER];
-				}
-				else if (isPrimitive(newState)) {
-					enterResult = newState
-				}
-			}
-			else {
-				enterResult = newState
-			}
+			enterResult = newState?.call ? newState.call(this.#context) : newState
 
-			//ignore entering falsy state
-			if (enterResult === false) {
-				this.set(prevValue);
-				this[enterFlag] = false;
-				// console.groupEnd();
-				return false;
-			}
+			// ignore entering falsy state
+			if (enterResult === false) return this.set(prevValue), this[enterFlag] = false;
 
-			//redirect if returned anything but current state
-			else if (enterResult !== undefined && enterResult !== value) {
-				this.set(enterResult);
-				this[enterFlag] = false;
-				// console.groupEnd();
-				return false;
-			}
+			// returned function means teardown
+			else if (enterResult?.call) { if (!this.#teardown) this.#teardown = enterResult }
+
+			// redirect if returned anything but current state
+			else if (enterResult !== undefined && enterResult !== value) return this.set(enterResult), this[enterFlag] = false;
 
 			this[enterFlag] = false;
 		}
-
-		// console.groupEnd();
-
-		//return context to chain calls
-		return this.#context;
 	};
 
 
@@ -162,8 +113,6 @@ class State {
 
 // API constants
 var OTHERWISE = State.OTHERWISE = '_'
-var ENTER = State.ENTER = 'enter'
-var EXIT = State.EXIT = 'exit'
 
 
 const isPrimitive = val => typeof val === 'object' ? val === null : typeof val !== 'function';
