@@ -1,5 +1,5 @@
 import t, {is} from 'tst'
-import State from '../index.js';
+import State from '../st8.js';
 
 
 t("perform state transitions", function(t){
@@ -372,3 +372,40 @@ t.skip("changed callback", function(t){
 	is(log, [2, 1]);
 
 });
+
+
+t('define-state', t => {
+	let target = {x:'a'}, log = []
+
+	var state = new State({
+		a() {
+			// onenter
+			log.push('>a')
+			is(this, target) //true
+		},
+
+		b() {
+			// onenter
+			log.push('>b')
+			is(this, target) //true
+			return () => {
+				log.push('<b')
+				// onexit
+			}
+		}
+	}, target);
+
+	Object.defineProperty(target, 'x', {
+		set: function (value) {
+			return state.set(value);
+		},
+		get: function () {
+			return state.get();
+		}
+	});
+
+	target.x = 'b'
+	is(log, ['>b'])
+	target.x = 'a'
+	is(log, ['>b', '<b', '>a'])
+})

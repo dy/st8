@@ -2,7 +2,7 @@
   "name": "st8",
   "version": "3.0.0",
   "description": "Tiny state machine",
-  "main": "index.js",
+  "main": "st8.js",
   "type": "module",
   "scripts": {
     "test": "node test"
