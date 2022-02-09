@@ -1,4 +1,4 @@
-# st8 [![test](https://github.com/dy/st8/actions/workflows/test.yml/badge.svg)](https://github.com/dy/st8/actions/workflows/test.yml) [![npm](https://img.shields.io/npm/v/subscript)](http://npmjs.org/subscript)
+# st8 [![test](https://github.com/dy/st8/actions/workflows/test.yml/badge.svg)](https://github.com/dy/st8/actions/workflows/test.yml) [![npm](https://img.shields.io/npm/v/st8)](http://npmjs.org/st8)
 
 > Tiny state machine for structural describing behavior of components.
 
