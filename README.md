@@ -9,12 +9,14 @@
 $ npm install st8
 ```
 
+## Standalone state machine
+
 ```js
 import State from 'st8';
 
 var state = new State({
 	// enter, exit
-	b: [ () => {}, () => {} ],
+	b: () => () => {},
 
 	// enter shortcut, forwards to state d
 	c: () => 'd',
@@ -32,6 +34,37 @@ state.set('a');
 
 //get current state
 state.get(); // 'a'
+```
+
+## Define stateful object property
+
+```js
+import State from 'st8'
+
+var state = new State({
+	a() {
+		// onenter
+		this === target //true
+	},
+
+	b() {
+		// onenter
+		this === target //true
+		return () => {
+			// onexit
+		}
+	}
+
+}, target);
+
+Object.defineProperty(target, property, {
+	set: function (value) {
+		return state.set(value);
+	},
+	get: function () {
+		return state.get();
+	}
+});
 ```
 
 # API

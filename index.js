@@ -14,6 +14,11 @@
  */
 
 class State {
+	#ready
+	#states
+	#context
+	#state
+
 	constructor(states, context) {
 		//ignore existing state
 		if (states instanceof State) return states;
@@ -22,13 +27,13 @@ class State {
 		if (!(this instanceof State)) return new State(states);
 
 		//save states object
-		this.states = states || {};
+		this.#states = states || {};
 
 		//save context
-		this.context = context || this;
+		this.#context = context || this;
 
-		//initedFlag
-		this.inited = false;
+		//readyFlag
+		this.#ready = false;
 	}
 
 	/**
@@ -38,7 +43,7 @@ class State {
 	*/
 
 	set(value) {
-		var prevValue = this.state, states = this.states;
+		var prevValue = this.#state, states = this.#states;
 		// console.group('set', value, prevValue);
 
 		//leave old state
@@ -46,16 +51,16 @@ class State {
 		var oldState = states[oldStateName];
 
 		var leaveResult, leaveFlag = EXIT + oldStateName;
-		if (this.inited) {
+		if (this.#ready) {
 			if (oldState) {
 				if (!this[leaveFlag]) {
 					this[leaveFlag] = true;
 
 					//if oldState has after method - call it
 					leaveResult = oldState[EXIT] && oldState[EXIT].call ?
-							oldState[EXIT].call(this.context) :
+							oldState[EXIT].call(this.#context) :
 						oldState[1] && oldState[1].call ?
-							oldState[1].call(this.context) : oldState[EXIT]
+							oldState[1].call(this.#context) : oldState[EXIT]
 
 					//ignore changing if leave result is falsy
 					if (leaveResult === false) {
@@ -75,7 +80,7 @@ class State {
 					this[leaveFlag] = false;
 
 					//ignore redirect
-					if (this.state !== prevValue) {
+					if (this.#state !== prevValue) {
 						return;
 					}
 				}
@@ -85,11 +90,11 @@ class State {
 			if (value === prevValue) return false;
 		}
 		else {
-			this.inited = true;
+			this.#ready = true;
 		}
 
 		//set current value
-		this.state = value;
+		this.#state = value;
 
 
 		//try to enter new state
@@ -104,15 +109,15 @@ class State {
 			if (newState) {
 				// enter pure function
 				if (newState.call) {
-					enterResult = newState.call(this.context)
+					enterResult = newState.call(this.#context)
 				}
 				// enter array
 				else if (Array.isArray(newState)) {
-					enterResult = (newState[0] && newState[0].call) ? newState[0].call(this.context, this) : newState[0]
+					enterResult = (newState[0] && newState[0].call) ? newState[0].call(this.#context, this) : newState[0]
 				}
 				// enter object with enter method
 				else if (newState.hasOwnProperty(ENTER)) {
-					enterResult = newState[ENTER].call ? newState[ENTER].call(this.context) : newState[ENTER];
+					enterResult = newState[ENTER].call ? newState[ENTER].call(this.#context) : newState[ENTER];
 				}
 				else if (isPrimitive(newState)) {
 					enterResult = newState
@@ -144,13 +149,13 @@ class State {
 		// console.groupEnd();
 
 		//return context to chain calls
-		return this.context;
+		return this.#context;
 	};
 
 
 	/** Get current state */
 	get() {
-		return this.state;
+		return this.#state;
 	};
 }
 
@@ -161,12 +166,7 @@ var ENTER = State.ENTER = 'enter'
 var EXIT = State.EXIT = 'exit'
 
 
-function isPrimitive(val) {
-  if (typeof val === 'object') {
-    return val === null;
-  }
-  return typeof val !== 'function';
-};
+const isPrimitive = val => typeof val === 'object' ? val === null : typeof val !== 'function';
 
 
 export default State;
