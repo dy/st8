@@ -1,4 +1,4 @@
-# st8 [![test](https://github.com/dy/st8/actions/workflows/test.yml/badge.svg)](https://github.com/dy/st8/actions/workflows/test.yml)
+# st8 [![test](https://github.com/dy/st8/actions/workflows/test.yml/badge.svg)](https://github.com/dy/st8/actions/workflows/test.yml) [![npm](https://img.shields.io/npm/v/subscript)](http://npmjs.org/subscript)
 
 > Tiny state machine for structural describing behavior of components.
 
@@ -90,8 +90,6 @@ Subscribe to state changes.
 
 Returns _Subscribable_ for interop with _Observables_ etc.
 -->
-
-[![NPM](https://nodei.co/npm/st8.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/st8/)
 
 
 <p align="center">🕉<p>
