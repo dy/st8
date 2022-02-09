@@ -12,7 +12,6 @@
  *
  * @param {object} settings Initial states
  */
-
 class State {
 	#states
 	#context
@@ -39,7 +38,6 @@ class State {
 	*
 	* @param {*} value Any new state to enter
 	*/
-
 	set(value) {
 		var prevValue = this.#state,
 				states = this.#states,
@@ -101,22 +99,18 @@ class State {
 
 			this[enterFlag] = false;
 		}
-	};
+	}
 
 
 	/** Get current state */
 	get() {
 		return this.#state;
-	};
+	}
 }
 
 
 // API constants
 var OTHERWISE = State.OTHERWISE = '_'
-
-
-const isPrimitive = val => typeof val === 'object' ? val === null : typeof val !== 'function';
-
 
 export default State;
 

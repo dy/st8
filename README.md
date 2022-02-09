@@ -77,11 +77,19 @@ Create a new state machine based on the `states` object. Optionally pass a `cont
 
 Get current state.
 
-
 ### state.set(value)
 
 Transition to a new state, invoking necessary callbacks.
 
+<!--
+### state.subscribe((newState,oldState) => {})
+
+Subscribe to state changes.
+
+### state\[Symbol.observable\]()
+
+Returns _Subscribable_ for interop with _Observables_ etc.
+-->
 
 [![NPM](https://nodei.co/npm/st8.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/st8/)
 
