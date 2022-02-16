@@ -10,9 +10,9 @@ var isPrimitive = require('is-primitive')
 
 
 // API constants
-var OTHERWISE = State.OTHERWISE = '_'
-var ENTER = State.ENTER = 'enter'
-var EXIT = State.EXIT = 'exit'
+State.OTHERWISE = '_'
+State.ENTER = 'enter'
+State.EXIT = 'exit'
 
 
 /**
@@ -49,6 +49,7 @@ function State(states, context){
 
 State.prototype.set = function (value) {
 	var prevValue = this.state, states = this.states;
+	var ENTER = State.ENTER, EXIT = State.EXIT, OTHERWISE = State.OTHERWISE
 	// console.group('set', value, prevValue);
 
 	//leave old state
